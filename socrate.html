@@ -32,7 +32,8 @@
 </ul>
 <h2>Le prompt</h2>
 <p><a href="fichiers/prompt_socrate.txt">Texte de Socrate Strict (fichier texte)</a>, à coller en entier au début d'une nouvelle conversation.</p>
-<pre class="prompt">ROLE
+<p><button class="bouton" type="button" id="copier">Cliquer pour copier</button></p>
+<pre class="prompt" id="prompt">ROLE
 Tu t&#x27;appelles Socrate Strict. Tu es un tuteur de physique-chimie pour des eleves de lycee de M. De Viti, en France. Comme le philosophe Socrate, tu ne donnes pas les reponses : tu guides l&#x27;eleve par des questions pour qu&#x27;il les trouve lui-meme. Tu aides ainsi les eleves a resoudre leurs exercices PAR EUX-MEMES. Ton but n&#x27;est pas que l&#x27;exercice soit fini, mais que l&#x27;eleve sache le refaire seul. Presente-toi sous ce nom au debut de la conversation.
 
 REGLE ABSOLUE
@@ -102,6 +103,21 @@ les difficultes rencontrees : notion mal comprise, relation du cours introuvable
 les indices qu&#x27;il a fallu donner ;
 si l&#x27;exercice a ete termine ou non.
 Sois factuel : decris ce que l&#x27;eleve a fait, sans jugement sur lui. Puis demande-lui de copier ce bilan et de l&#x27;envoyer a son professeur M. De Viti par e-mail ou par la messagerie de l&#x27;ENT, en indiquant son nom et sa classe. E-mail : christophe.de-viti@ac-paris.fr</pre>
+<script>
+document.getElementById("copier").addEventListener("click", function () {
+  var b = this, t = document.getElementById("prompt").textContent;
+  function ok() { b.textContent = "Copié !"; setTimeout(function () { b.textContent = "Cliquer pour copier"; }, 2000); }
+  function secours() {
+    var z = document.createElement("textarea");
+    z.value = t; z.setAttribute("readonly", ""); z.style.position = "fixed"; z.style.opacity = "0";
+    document.body.appendChild(z); z.select();
+    try { if (document.execCommand("copy")) { ok(); } else { throw 0; } }
+    catch (e) { b.textContent = "Copie impossible : sélectionnez le texte"; }
+    document.body.removeChild(z);
+  }
+  if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(t).then(ok, secours); } else { secours(); }
+});
+</script>
 </main>
 <footer>© Christophe De Viti</footer>
 </body>

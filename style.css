@@ -14,6 +14,7 @@ a.lien{text-decoration:none;color:var(--texte)}a.lien:hover{border-color:var(--a
 ul{padding-left:1.2rem}li{margin:.2rem 0}.photo{float:right;width:9rem;max-width:35%;border-radius:10px;margin:0 0 1rem 1rem}
 footer{max-width:62rem;margin:0 auto;padding:1rem;color:var(--doux);font-size:.85rem;border-top:1px solid var(--bord)}
 .emoji{height:1.15em;width:1.15em;vertical-align:-.25em}nav a{white-space:nowrap}.doux{color:var(--doux)}
+button.bouton{border:0;cursor:pointer;font:inherit;font-weight:bold}
 .bouton{display:inline-block;padding:.45rem 1.2rem;border-radius:8px;background:var(--accent);color:var(--fond);text-decoration:none;font-weight:bold}.bouton:hover{opacity:.88}
 .refs li{margin:.7rem 0}.refs .doux{font-size:.95rem}
 pre.prompt{white-space:pre-wrap;background:var(--carte);border:1px solid var(--bord);border-radius:10px;padding:1rem;font:14px/1.5 ui-monospace,Menlo,Consolas,monospace}
