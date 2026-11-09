@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radioactivité – Flashcards</title>
+<style>
+  :root { --bg:#000; --fg:#fff; --card:#000; --accent:#9db8ee; --muted:#9aa0ab; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; flex-direction:column; align-items:center;
+         justify-content:center; gap:1.2rem; padding:1.5rem; background:var(--bg); color:var(--fg);
+         font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  h1 { font-size:1.1rem; font-weight:600; margin:0; color:var(--muted); }
+  .card { width:min(720px,100%); min-height:min(400px,62vh); cursor:pointer; background:var(--card);
+          border:1px solid #444; border-radius:14px; padding:1.6rem 1.8rem; display:flex;
+          flex-direction:column; justify-content:center; gap:1.2rem; font-size:1.2rem; line-height:1.6; }
+  #q { color:var(--fg); }
+  #a { display:none; color:#a8a8a8; border-top:1px solid #444; padding-top:1.2rem; }
+  .card.shown #a { display:block; }
+  .nav { display:flex; align-items:center; gap:1rem; }
+  button { font:inherit; padding:.5rem 1.1rem; border:1px solid var(--accent); background:transparent;
+           color:var(--accent); border-radius:8px; cursor:pointer; }
+  button:hover { background:var(--accent); color:var(--bg); }
+  #count { min-width:5rem; text-align:center; color:var(--muted); }
+  .nuc { display:inline-flex; align-items:center; }
+  .nuc .ns { display:inline-flex; flex-direction:column; font-size:.7em; line-height:1.05; margin-right:.1em; text-align:right; }
+  .eq { margin-top:.6rem; }
+  .bar { text-decoration:overline; }
+  .frac { display:inline-block; vertical-align:middle; text-align:center; }
+  .frac > span { display:block; padding:0 .25em; }
+  .frac > span:first-child { border-bottom:1px solid currentColor; }
+  ol, ul { margin:.3rem 0 0; padding-left:1.4rem; }
+  .page { margin-top:.9rem; font-size:.95rem; color:#7d7d7d; }
+  #consigne { margin:0; color:var(--muted); font-size:1.1rem; }
+  [hidden] { display:none !important; }
+  #start { display:flex; flex-direction:column; align-items:center; gap:1.4rem; text-align:center; }
+  #start label { font-size:1.6rem; line-height:1.4; }
+  #start input { font:inherit; font-size:2rem; width:6rem; text-align:center; padding:.4rem;
+                 background:#000; color:var(--fg); border:1px solid #666; border-radius:8px; }
+  #start button { font-size:1.2rem; padding:.7rem 1.8rem; }
+</style>
+</head>
+<body>
+<h1>Radioactivité – Terminale spécialité</h1>
+<form id="start" novalidate>
+  <label for="n">Combien de flashcards ?<br><small id="hint" style="color:var(--muted);font-size:1rem"></small></label>
+  <input id="n" type="number" min="1" value="10" inputmode="numeric">
+  <button type="submit">Commencer</button>
+  <p id="consigne">Pour chaque carte, cliquer dessus pour afficher la réponse.</p>
+</form>
+<div class="card" id="card" title="Cliquer pour afficher la réponse" hidden>
+  <div id="q"></div>
+  <div id="a"></div>
+</div>
+<div class="nav" id="nav" hidden>
+  <button id="prev" type="button">←</button>
+  <span id="count"></span>
+  <button id="next" type="button">→</button>
+</div>
+
+<script>
+// Noyau ou particule : A en haut, Z en bas, puis le symbole
+const NUC = (A,Z,X) => '<span class="nuc"><span class="ns"><span>'+A+'</span><span>'+Z+'</span></span>'+X+'</span>';
+// Fraction
+const F = (n,d) => '<span class="frac"><span>'+n+'</span><span>'+d+'</span></span>';
+const EQ = s => '<div class="eq">'+s+'</div>';
+
+const nu  = '<span class="bar">ν</span><sub>e</sub>';
+const eqX = (Ap,Zp) => NUC('$A$','$Z$','X') + ' → ' + NUC(Ap,Zp,'Y');
+
+const cards = [
+
+ /* ===== Leçon I – Modélisation des transformations nucléaires ===== */
+ ["Que représente le diagramme de Segré ?",
+  "L’ensemble des isotopes présents dans l’Univers. Il indique la position des isotopes stables, les autres étant instables.", 5],
+ ["Que devient un isotope instable ?",
+  "Il se désintègre spontanément en d’autres noyaux plus stables, jusqu’à rejoindre la « vallée de stabilité ».", 5],
+ ["Comment note-t-on un noyau de symbole X, de nombre de masse $A$ et de nombre de charges $Z$ ?",
+  EQ(NUC('$A$','$Z$','X')), 7],
+ ["Quelles lois de conservation s’appliquent lors d’une désintégration radioactive ?",
+  "Les lois de Soddy (1903) : conservation du nombre de masse $A$ et conservation de la charge $Z$.", 7],
+ ["Quelle particule est émise lors d’une désintégration α ?",
+  "Une particule α, équivalente à un noyau d’hélium 4 (" + NUC('4','2','He') + ").", 6],
+ ["Quel est le noyau fils d’une désintégration α du noyau " + NUC('$A$','$Z$','X') + ", en fonction de $A$ et de $Z$ ?",
+  EQ(NUC('$A$','$Z$','X') + ' → ' + NUC('$A$−4','$Z$−2','Y') + ' + ' + NUC('4','2','He')), 6],
+ ["Quelles particules sont émises lors d’une désintégration β⁻ ?",
+  "Un électron " + NUC('0','−1','e') + " et un antineutrino électronique " + NUC('0','0',nu) + ".", 6],
+ ["Dans le noyau, quelle transformation se produit lors d’une désintégration β⁻ ?",
+  "Un neutron du noyau se transforme en un proton.", 6],
+ ["Quel est le noyau fils d’une désintégration β⁻ du noyau " + NUC('$A$','$Z$','X') + ", en fonction de $A$ et de $Z$ ?",
+  EQ(NUC('$A$','$Z$','X') + ' → ' + NUC('$A$','$Z$+1','Y') + ' + ' + NUC('0','−1','e') + ' + ' + NUC('0','0',nu)), 6],
+ ["Quelles particules sont émises lors d’une désintégration β⁺ ?",
+  "Un positron " + NUC('0','+1','e') + " et un neutrino électronique " + NUC('0','0','ν<sub>e</sub>') + ".", 6],
+ ["Dans le noyau, quelle transformation se produit lors d’une désintégration β⁺ ?",
+  "Un proton du noyau se transforme en un neutron.", 6],
+ ["Quel est le noyau fils d’une désintégration β⁺ du noyau " + NUC('$A$','$Z$','X') + ", en fonction de $A$ et de $Z$ ?",
+  EQ(NUC('$A$','$Z$','X') + ' → ' + NUC('$A$','$Z$−1','Y') + ' + ' + NUC('0','+1','e') + ' + ' + NUC('0','0','ν<sub>e</sub>')), 6],
+ ["Dans quel état se trouve le noyau avant une émission γ ?",
+  "Dans un état excité, noté " + NUC('$A$','$Z$','X*') + " : il revient à l’état fondamental en émettant le photon γ.", 6],
+ ["Quelle est l’équation de l’émission γ d’un noyau excité " + NUC('$A$','$Z$','X*') + " ?",
+  EQ(NUC('$A$','$Z$','X*') + ' → ' + NUC('$A$','$Z$','X') + ' + ' + NUC('0','0','γ')), 6],
+
+ /* ===== Leçon II – Équation différentielle du premier ordre ===== */
+ ["Quel est l’ordre de l’équation différentielle $y$′($x$) + 3·$y$($x$) = 0 ?",
+  "Le premier ordre : l’équation ne fait intervenir que la dérivée première $y$′.", 9],
+ ["Quel est l’ordre de l’équation différentielle " + F('d$N$($t$)','d$t$') + " + $λ$·$N$($t$) = 0 ?",
+  "Le premier ordre : l’équation ne fait intervenir que la dérivée première de $N$, d$N$($t$)/d$t$.", 11],
+ ["L’équation différentielle " + F('d$N$($t$)','d$t$') + " + $λ$·$N$($t$) = 0 est-elle sans second membre ?",
+  "Oui : son membre de droite est nul.", 9],
+ ["L’équation différentielle $y$′($x$) + 2·$y$($x$) = 4 est-elle sans second membre ?",
+  "Non : son membre de droite, 4, n’est pas nul.", 9],
+ ["Quelle est l’expression des solutions $y$($x$) de l’équation différentielle $y$′($x$) + $a$·$y$($x$) = 0 (avec $a$ un nombre réel constant), en fonction de $a$, de $x$ et d’une constante réelle $K$ ?",
+  "Les fonctions $y$($x$) = $K$·e<sup>−$a$·$x$</sup>, où $K$ est une constante réelle quelconque.", 9],
+ ["Dans la solution générale $y$($x$) = $K$·e<sup>−$a$·$x$</sup> de l’équation différentielle $y$′($x$) + $a$·$y$($x$) = 0, quelle est l’expression de la constante $K$ en fonction de la condition initiale $y$(0) ?",
+  "$K$ = $y$(0). En notant $y$(0) = $y$<sub>0</sub>, la solution est $y$($x$) = $y$<sub>0</sub>·e<sup>−$a$·$x$</sup>.", 9],
+ ["Quelle est la solution de l’équation différentielle $y$′($x$) + 3·$y$($x$) = 0 qui vérifie $y$(0) = 5 ?",
+  EQ('$y$($x$) = 5·e<sup>−3·$x$</sup>'), 9],
+
+ /* ===== Leçon III – Évolution temporelle d’une population de noyaux radioactifs ===== */
+ ["La désintégration d’un noyau radioactif donné est-elle prévisible ?",
+  "Non : c’est un phénomène aléatoire. À chaque instant, un noyau instable a une certaine probabilité de se désintégrer, qui ne dépend ni de son passé, ni de son environnement. Il est impossible de prévoir quand un noyau radioactif va se désintégrer.", 11],
+ ["Pour quel ensemble de noyaux radioactifs peut-on prévoir l’évolution au cours du temps ?",
+  "Une population suffisamment grande de noyaux.", 11],
+ ["Comment définit-on l’activité $A$($t$) d’une population de noyaux radioactifs, en fonction du nombre $N$($t$) de noyaux restants à l’instant $t$ ?",
+  "Le nombre de noyaux qui se désintègrent par seconde :" +
+  EQ('$A$($t$) = − ' + F('d$N$($t$)','d$t$')) +
+  "avec $N$($t$) le nombre de noyaux restants à l’instant $t$.", 11],
+ ["En quelle unité mesure-t-on l’activité d’une population de noyaux radioactifs ?",
+  "En becquerel (Bq).", 11],
+ ["Quelle est l’expression de l’activité $A$($t$) d’une population de noyaux radioactifs, en fonction du nombre $N$($t$) de noyaux restants et de la constante radioactive $λ$ ?",
+  "La loi de décroissance radioactive : l’activité est proportionnelle au nombre de noyaux radioactifs restants." +
+  EQ('$A$($t$) = $λ$·$N$($t$)') +
+  "$λ$ est la constante radioactive.", 11],
+ ["Quelle équation différentielle relie le nombre $N$($t$) de noyaux radioactifs restants à l’instant $t$, sa dérivée d$N$($t$)/d$t$ et la constante radioactive $λ$ ?",
+  EQ(F('d$N$($t$)','d$t$') + ' + $λ$·$N$($t$) = 0'), 11],
+ ["Quelle est l’expression du nombre $N$($t$) de noyaux radioactifs restants à l’instant $t$, en fonction de $N$<sub>0</sub> (nombre de noyaux à l’instant $t$ = 0), de la constante radioactive $λ$ et de $t$ ?",
+  EQ('$N$($t$) = $N$<sub>0</sub>·e<sup>−$λ$·$t$</sup>'), 11],
+ ["Quelle est la définition du temps de demi-vie $t$<sub>1/2</sub> d’un échantillon de noyaux radioactifs ?",
+  "La durée au bout de laquelle la moitié de la quantité initiale de noyaux radioactifs s’est désintégrée.", 12],
+ ["Quelle est l’expression du temps de demi-vie $t$<sub>1/2</sub> en fonction de la constante radioactive $λ$ ?",
+  EQ('$t$<sub>1/2</sub> = ' + F('ln(2)','$λ$')), 12],
+
+ /* ===== Leçon IV – Application : datation ===== */
+ ["Quel phénomène permet de dater un échantillon par la radioactivité ?",
+  "La désintégration spontanée de noyaux radioactifs présents dans certains matériaux (roches, fossiles, matières organiques, etc.), caractérisée par la demi-vie de l’isotope radioactif.", 13],
+ ["En datation par la radioactivité, à quel moment l’isotope radioactif est-il incorporé dans l’objet à dater ?",
+  "Lors de la formation de l’objet (roche, organisme).", 13],
+ ["En datation par la radioactivité, selon quelle loi l’isotope père se désintègre-t-il en isotope fils ?",
+  "Selon une loi de décroissance exponentielle.", 13],
+ ["En datation par la radioactivité, que mesure-t-on pour dater un échantillon ?",
+  "La quantité actuelle de l’isotope radioactif, $N$($t$), et éventuellement celle de l’isotope fils.", 13],
+ ["Quel type d’échantillon date-t-on avec le couple carbone 14 → azote 14 ?",
+  "Des matières organiques récentes.", 13],
+ ["Jusqu’à quel âge peut-on dater une matière organique avec le carbone 14 ?",
+  "Jusqu’à 50 000 ans.", 13],
+ ["Quel type d’échantillon date-t-on avec le couple uranium 238 → plomb 206 ?",
+  "Des roches anciennes, jusqu’à plusieurs milliards d’années.", 13],
+ ["Quel ordre de grandeur doit avoir le temps de demi-vie d’un noyau radioactif utilisé pour dater un échantillon ?",
+  "Celui de l’âge estimé de l’échantillon à dater.", 13],
+
+ /* ===== Leçon V – Application : protection contre les rayonnements ionisants ===== */
+ ["Que permet de produire la scintigraphie ?",
+  "Des images des organes et des tissus internes, à l’aide de radionucléides.", 15],
+ ["Quel radio-isotope est couramment utilisé en scintigraphie ?",
+  "Le technétium-99m.", 15],
+ ["Que signifie le sigle TEP ?",
+  "Tomographie par émission de positons.", 15],
+ ["Que permet d’obtenir la tomographie par émission de positons ?",
+  "Des images en trois dimensions du corps humain, à l’aide d’isotopes radioactifs.", 15],
+ ["Quel isotope est fréquemment utilisé en tomographie par émission de positons ?",
+  "Le fluor-18.", 15],
+ ["Quel type de rayonnement est utilisé en radiothérapie pour traiter des cancers ?",
+  "Des rayonnements ionisants.", 15],
+ ["Quel isotope est utilisé en radiothérapie pour traiter les cancers de la thyroïde ?",
+  "L’iode-131.", 15],
+ ["Où place-t-on les sources radioactives en brachythérapie ?",
+  "Directement dans ou près de la tumeur (implantation).", 15],
+ ["En brachythérapie, quel est l’avantage de placer les sources radioactives dans ou près de la tumeur ?",
+  "Délivrer une dose élevée de radiations tout en minimisant l’impact sur les tissus sains.", 15],
+ ["La radiographie utilise-t-elle la radioactivité ?",
+  "Pas directement. Elle repose sur les rayonnements ionisants, similaires à ceux émis par les isotopes radioactifs.", 15],
+ ["Quelle propriété définit un rayonnement ionisant ?",
+  "Il possède assez d’énergie pour arracher un ou plusieurs électrons à un atome ou une molécule, créant ainsi des ions.", 16],
+ ["Parmi les rayonnements α, β⁻ et γ, lequel est le plus pénétrant ?",
+  "Le rayonnement γ, très pénétrant (β⁻ : pouvoir pénétrant modéré ; α : peu pénétrant).", 16],
+ ["Parmi les rayonnements α, β⁻ et γ, lequel est le moins pénétrant ?",
+  "Le rayonnement α, peu pénétrant.", 16],
+ ["À quel autre rayonnement le rayonnement β⁺ est-il similaire en pouvoir ionisant et pénétrant ?",
+  "Au rayonnement β⁻ : les positrons sont similaires aux électrons.", 16],
+ ["De quoi est constitué le rayonnement γ ?",
+  "De photons de haute énergie.", 16],
+ ["Parmi les rayonnements α, β⁻ et γ, lequel est le plus ionisant ?",
+  "Le rayonnement α, très ionisant (β⁻ : ionisation moyenne ; γ : peu ionisant).", 16],
+ ["De quoi sont constitués les rayons X ?",
+  "De photons produits artificiellement.", 16],
+ ["Les rayons X sont-ils plus ou moins énergétiques que les rayons gamma ?",
+  "Souvent moins énergétiques : ce sont des photons produits artificiellement, similaires aux rayons gamma.", 16],
+ ["Lors de quelles réactions des neutrons libres sont-ils émis ?",
+  "Lors de réactions de fission ou de fusion.", 16],
+ ["Un rayonnement de neutrons ionise-t-il la matière directement ou indirectement ?",
+  "Indirectement ; les neutrons sont par ailleurs fortement pénétrants.", 16],
+ ["De quoi est constitué le rayonnement cosmique ?",
+  "De particules très énergétiques provenant de l’espace, principalement des protons, des noyaux lourds et des muons.", 16],
+ ["Pourquoi les transformations radioactives présentent-elles un danger pour les humains ?",
+  "Elles produisent des rayonnements ionisants, susceptibles de présenter un danger pour les humains.", 16],
+ ["Sur quels trois paramètres peut-on jouer pour se protéger des rayonnements ionisants ?",
+  "<ul><li>La durée d’exposition ;</li><li>les équipements de protection personnelle ;</li><li>la distance à la source radioactive.</li></ul>", 16],
+
+ /* ===== Noms des grandeurs ===== */
+ ["Dans la loi de décroissance radioactive $N$($t$) = $N$<sub>0</sub>·e<sup>−$λ$·$t$</sup>, comment s’appelle la grandeur $λ$ ?",
+  "La constante radioactive.", 11],
+ ["Dans la loi de décroissance radioactive $N$($t$) = $N$<sub>0</sub>·e<sup>−$λ$·$t$</sup>, comment s’appelle la grandeur $N$<sub>0</sub> ?",
+  "Le nombre de noyaux radioactifs à l’instant $t$ = 0 (nombre initial de noyaux).", 11],
+ ["Dans la loi de décroissance radioactive $N$($t$) = $N$<sub>0</sub>·e<sup>−$λ$·$t$</sup>, comment s’appelle la grandeur $N$($t$) ?",
+  "Le nombre de noyaux radioactifs restants à l’instant $t$.", 11],
+ ["Dans la relation $A$($t$) = $λ$·$N$($t$) relative à une population de noyaux radioactifs, comment s’appelle la grandeur $A$($t$) ?",
+  "L’activité de la population de noyaux radioactifs, mesurée en becquerel (Bq).", 11],
+ ["Que désigne le symbole Bq ?",
+  "Le becquerel, unité de l’activité d’une population de noyaux radioactifs.", 11],
+ ["Dans l’expression $t$<sub>1/2</sub> = ln(2)/$λ$, comment s’appelle la grandeur $t$<sub>1/2</sub> ?",
+  "Le temps de demi-vie.", 12],
+ ["Dans la relation $A$($t$) = $A$<sub>0</sub>·e<sup>−$λ$·$t$</sup> relative à l’activité d’un échantillon, comment s’appelle la grandeur $A$<sub>0</sub> ?",
+  "L’activité de l’échantillon à l’instant $t$ = 0 (activité initiale).", 13],
+ ["Dans la notation " + NUC('$A$','$Z$','X') + " d’un noyau ou d’une particule, comment s’appelle la grandeur $A$ ?",
+  "Le nombre de masse.", 7],
+ ["Dans la notation " + NUC('$A$','$Z$','X') + " d’un noyau ou d’une particule, comment s’appelle la grandeur $Z$ ?",
+  "Le nombre de charges.", 7],
+ ["Dans la notation " + NUC('$A$','$Z$','X') + " d’un noyau ou d’une particule, que représente X ?",
+  "Le symbole de l’entité (noyau ou particule).", 7],
+ ["Dans l’équation différentielle $y$′($x$) + $a$·$y$($x$) = 0, que représente $y$ ?",
+  "La fonction inconnue : l’inconnue d’une équation différentielle est une fonction, notée ici $y$.", 9],
+ ["Dans l’équation différentielle $y$′($x$) + $a$·$y$($x$) = 0, comment s’appelle $y$′($x$) ?",
+  "La dérivée (première) de la fonction $y$ : l’équation est dite « du premier ordre ».", 9],
+ ["Dans les solutions $y$($x$) = $K$·e<sup>−$a$·$x$</sup> de l’équation différentielle $y$′($x$) + $a$·$y$($x$) = 0, que représente $K$ ?",
+  "Une constante réelle quelconque, déterminée par la valeur de $y$ en 0 (condition initiale).", 9],
+ ["En datation par la radioactivité, comment appelle-t-on l’isotope radioactif instable qui se désintègre ?",
+  "L’isotope père.", 13],
+ ["En datation par la radioactivité, comment appelle-t-on l’isotope stable formé par la désintégration de l’isotope père ?",
+  "L’isotope fils.", 13],
+
+ /* ===== Exemples à analyser ===== */
+ ["Quel est le nombre de protons du noyau " + NUC('12','6','C') + " ?",
+  "6 : le nombre de charges $Z$ = 6 est le nombre de protons du noyau.", 7],
+ ["Quel est le nombre de neutrons du noyau " + NUC('12','6','C') + " ?",
+  "6 : le noyau compte $A$ = 12 nucléons, dont $Z$ = 6 protons, donc 12 − 6 = 6 neutrons.", 7],
+ ["Quel est le nombre de nucléons du noyau " + NUC('14','6','C') + " ?",
+  "14 : c’est le nombre de masse $A$.", 7],
+ ["Quel est le nombre de neutrons du noyau " + NUC('14','6','C') + " ?",
+  "8 : $A$ − $Z$ = 14 − 6 = 8.", 7],
+ ["Quelle est la composition du noyau d’uranium 238, " + NUC('238','92','U') + " ?",
+  "$Z$ = 92 protons et $A$ − $Z$ = 238 − 92 = 146 neutrons.", 7],
+ ["Les noyaux " + NUC('12','6','C') + " et " + NUC('14','6','C') + " sont-ils isotopes ?",
+  "Oui : ils ont le même nombre de charges $Z$ = 6 (même élément) mais des nombres de masse différents ($A$ = 12 et $A$ = 14), donc 6 et 8 neutrons.", "5 et 7"],
+ ["Dans la réaction " + NUC('$A$','$Z$','X') + " → " + NUC('148','62','Sm') + " + " + NUC('4','2','He') + ", de quel type de radioactivité s’agit-il ?",
+  "Radioactivité α : la particule émise est un noyau d’hélium 4, " + NUC('4','2','He') + ".", "6 et 7"],
+ ["Dans la réaction " + NUC('$A$','$Z$','X') + " → " + NUC('148','62','Sm') + " + " + NUC('4','2','He') + ", quels sont le nombre de masse $A$ et le nombre de charges $Z$ du noyau X ?",
+  "Conservation de $A$ : $A$ = 148 + 4 = 152. Conservation de $Z$ : $Z$ = 62 + 2 = 64.", 7],
+ ["Quelle est l’équation de la désintégration β⁻ du noyau " + NUC('14','6','C') + " ?",
+  EQ(NUC('14','6','C') + ' → ' + NUC('14','7','N') + ' + ' + NUC('0','−1','e') + ' + ' + NUC('0','0',nu)) +
+  "Conservation de $A$ : 14 = 14 + 0 + 0. Conservation de $Z$ : 6 = 7 + (−1) + 0.", "6 et 7"],
+ ["Quelle est l’équation de la désintégration β⁻ du lithium 8, " + NUC('8','3','Li') + " ?",
+  EQ(NUC('8','3','Li') + ' → ' + NUC('8','4','Be') + ' + ' + NUC('0','−1','e') + ' + ' + NUC('0','0',nu)) +
+  "Conservation de $A$ : 8 = 8 + 0 + 0. Conservation de $Z$ : 3 = 4 + (−1) + 0.", "6 et 7"],
+ ["Quelle est l’équation de la désintégration β⁺ du phosphore 30, " + NUC('30','15','P') + " ?",
+  EQ(NUC('30','15','P') + ' → ' + NUC('30','14','Si') + ' + ' + NUC('0','+1','e') + ' + ' + NUC('0','0','ν<sub>e</sub>')) +
+  "Conservation de $A$ : 30 = 30 + 0 + 0. Conservation de $Z$ : 15 = 14 + 1 + 0.", "6 et 7"],
+ ["Quelle est l’équation de la désintégration α du noyau " + NUC('238','92','U') + " ?",
+  EQ(NUC('238','92','U') + ' → ' + NUC('234','90','Th') + ' + ' + NUC('4','2','He')) +
+  "Conservation de $A$ : 238 = 234 + 4. Conservation de $Z$ : 92 = 90 + 2.", "6 et 7"],
+ ["Quelle est la constante radioactive $λ$ d’un noyau de temps de demi-vie $t$<sub>1/2</sub> = 5730 ans ?",
+  EQ('$λ$ = ' + F('ln(2)','$t$<sub>1/2</sub>') + ' = ' + F('ln(2)','5730 ans') + ' ≈ 1,21 × 10<sup>−4</sup> an<sup>−1</sup>'), 12],
+ ["Un échantillon contient 1,0 × 10<sup>6</sup> noyaux radioactifs à l’instant $t$ = 0. Combien en reste-t-il à l’instant $t$ = 2·$t$<sub>1/2</sub> ?",
+  EQ('$N$(2·$t$<sub>1/2</sub>) = $N$<sub>0</sub>·e<sup>−$λ$·2·$t$<sub>1/2</sub></sup> = $N$<sub>0</sub>·e<sup>−2·ln(2)</sup> = ' + F('$N$<sub>0</sub>','4') + ' = 2,5 × 10<sup>5</sup> noyaux'), 12],
+ ["Un échantillon contient 2,0 × 10<sup>6</sup> noyaux radioactifs, de constante radioactive $λ$ = 1,0 × 10<sup>−3</sup> s<sup>−1</sup>. Quelle est son activité $A$ ?",
+  EQ('$A$ = $λ$·$N$ = 1,0 × 10<sup>−3</sup> × 2,0 × 10<sup>6</sup> = 2,0 × 10<sup>3</sup> Bq'), 11],
+ ["L’activité d’un échantillon de bois est $A$ = 12,0 désintégrations par minute et par gramme de carbone, alors que celle du carbone d’un organisme vivant est $A$<sub>0</sub> = 13,6 désintégrations par minute et par gramme de carbone. Sachant que le temps de demi-vie du carbone 14 est $t$<sub>1/2</sub> = 5730 ans, quel est l’âge de l’échantillon ?",
+  "$A$($t$) = $A$<sub>0</sub>·e<sup>−$λ$·$t$</sup>, d’où $t$ = " + F('1','$λ$') + "·ln(" + F('$A$<sub>0</sub>','$A$($t$)') + ")." +
+  EQ('$t$ = ' + F('$t$<sub>1/2</sub>','ln(2)') + '·ln(' + F('13,6','12,0') + ') ≈ 1,03 × 10<sup>3</sup> ans'), 13]
+];
+
+// $x$ → variable en italique
+const it = s => s.replace(/\$([^$]+)\$/g, '<i>$1</i>');
+// Espaces insécables avant : ; ? ! » % et après « (hors balises)
+const nb = s => s.replace(/ ([:;?!»%])/g, ' $1').replace(/« /g, '« ');
+const fmt = s => nb(it(s));
+
+let i = 0;
+const $ = id => document.getElementById(id);
+const card = $('card');
+
+let deck = [];
+function shuffle(a) {
+  for (let k = a.length - 1; k > 0; k--) {
+    const j = Math.floor(Math.random() * (k + 1));
+    [a[k], a[j]] = [a[j], a[k]];
+  }
+  return a;
+}
+function show() {
+  card.classList.remove('shown');
+  $('q').innerHTML = fmt(deck[i][0]);
+  $('a').innerHTML = fmt(deck[i][1]) + '<div class="page">Cours Radioactivité, ' + (typeof deck[i][2] === 'number' ? 'page ' : 'pages ') + deck[i][2] + '</div>';
+  $('count').textContent = (i + 1) + ' / ' + deck.length;
+}
+function go(d) { i = (i + d + deck.length) % deck.length; show(); }
+function reveal() { card.classList.toggle('shown'); }
+
+card.addEventListener('click', reveal);
+$('prev').addEventListener('click', () => go(-1));
+$('next').addEventListener('click', () => go(1));
+document.addEventListener('keydown', e => {
+  if (!deck.length) return;
+  if (e.key === 'ArrowRight') go(1);
+  else if (e.key === 'ArrowLeft') go(-1);
+  else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); reveal(); }
+});
+$('n').max = cards.length;
+$('hint').textContent = 'de 1 à ' + cards.length;
+$('start').addEventListener('submit', e => {
+  e.preventDefault();
+  let n = parseInt($('n').value, 10);
+  if (isNaN(n)) n = 10;
+  n = Math.max(1, Math.min(n, cards.length));
+  deck = shuffle(cards.slice()).slice(0, n);
+  i = 0;
+  $('start').hidden = true;
+  card.hidden = false;
+  $('nav').hidden = false;
+  show();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+:root{--fond:#fbfaf7;--texte:#1d2330;--doux:#5b6475;--accent:#1f4e8c;--carte:#fff;--bord:#e2dfd6}
+@media (prefers-color-scheme:dark){:root{--fond:#14171d;--texte:#e8eaf0;--doux:#9aa3b5;--accent:#8db6f0;--carte:#1c2029;--bord:#2d3340}}
+*{box-sizing:border-box}body{margin:0;background:var(--fond);color:var(--texte);font:17px/1.55 Georgia,'Times New Roman',serif}
+header{border-bottom:1px solid var(--bord);background:var(--carte)}
+.bandeau{max-width:62rem;margin:0 auto;padding:1.1rem 1rem .4rem;display:flex;flex-wrap:wrap;gap:.2rem 1rem;align-items:baseline}
+.nom{font-size:1.35rem;font-weight:bold;color:var(--texte);text-decoration:none}.sous{color:var(--doux);font-size:.9rem}
+nav{max-width:62rem;margin:0 auto;padding:0 1rem .7rem;display:flex;flex-wrap:wrap;gap:.3rem 1.1rem}
+nav a{color:var(--doux);text-decoration:none;padding:.15rem 0;border-bottom:2px solid transparent}nav a:hover,nav a.actif{color:var(--accent);border-color:var(--accent)}
+main{max-width:62rem;margin:0 auto;padding:1.5rem 1rem 3rem}h1{margin:.2rem 0 .8rem;font-size:1.9rem}h2{margin:2rem 0 .6rem;font-size:1.3rem;border-bottom:1px solid var(--bord);padding-bottom:.2rem}h3{margin:.1rem 0 .4rem;font-size:1.05rem}
+a{color:var(--accent)}.chapeau{color:var(--doux);font-size:1.1rem}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:1rem;margin:1rem 0}
+.carte{background:var(--carte);border:1px solid var(--bord);border-radius:10px;padding:.9rem 1rem}.carte ul{margin:0;padding-left:1.1rem}.carte p{margin:0;color:var(--doux);font-size:.95rem}
+a.lien{text-decoration:none;color:var(--texte)}a.lien:hover{border-color:var(--accent)}
+ul{padding-left:1.2rem}li{margin:.2rem 0}.photo{float:right;width:9rem;max-width:35%;border-radius:10px;margin:0 0 1rem 1rem}
+footer{max-width:62rem;margin:0 auto;padding:1rem;color:var(--doux);font-size:.85rem;border-top:1px solid var(--bord)}
+.emoji{height:1.15em;width:1.15em;vertical-align:-.25em}nav a{white-space:nowrap}.doux{color:var(--doux)}
+.bouton{display:inline-block;padding:.45rem 1.2rem;border-radius:8px;background:var(--accent);color:var(--fond);text-decoration:none;font-weight:bold}.bouton:hover{opacity:.88}
+.refs li{margin:.7rem 0}.refs .doux{font-size:.95rem}
+pre.prompt{white-space:pre-wrap;background:var(--carte);border:1px solid var(--bord);border-radius:10px;padding:1rem;font:14px/1.5 ui-monospace,Menlo,Consolas,monospace}

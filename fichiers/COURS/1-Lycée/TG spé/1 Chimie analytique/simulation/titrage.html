@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulation de titrage</title>
+<style>
+  :root { --fg:#1d2733; --muted:#5b6673; --line:#cfd6de; --bg:#f6f8fa; --acc:#1f5fa8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--fg); background:var(--bg); }
+  main { max-width:1100px; margin:0 auto; padding:16px; display:grid; grid-template-columns:minmax(320px,440px) 1fr; gap:20px; align-items:start; }
+  @media (max-width:820px){ main{ grid-template-columns:1fr; } }
+  h1 { font-size:1.2rem; margin:0 0 12px; grid-column:1/-1; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:8px; padding:14px; }
+  .card + .card { margin-top:16px; }
+  h2 { font-size:1rem; margin:0 0 8px; }
+  svg { width:100%; height:auto; display:block; }
+  .controls { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:10px; }
+  .controls input[type=range]{ flex:1 1 180px; }
+  button { font:inherit; padding:6px 12px; border:1px solid var(--acc); background:var(--acc); color:#fff; border-radius:6px; cursor:pointer; }
+  button.sec { background:#fff; color:var(--acc); }
+  .eq { font-size:1.3rem; text-align:center; padding:8px 0; }
+  table { width:100%; border-collapse:collapse; font-size:.95rem; }
+  th, td { border:1px solid var(--line); padding:6px 8px; text-align:center; }
+  th { background:#eef2f6; }
+  td:first-child, th:first-child { text-align:left; }
+  .vol { font-variant-numeric:tabular-nums; font-weight:600; }
+  .state { margin:8px 0 0; font-size:.95rem; }
+  .legend { display:flex; flex-wrap:wrap; gap:6px 16px; font-size:.9rem; color:var(--muted); margin-top:8px; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .dot { width:16px; height:16px; border-radius:50%; display:inline-block; border:1px solid #333; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Simulation de titrage</h1>
+
+  <section class="card">
+    <svg id="scene" viewBox="0 0 440 530" role="img" aria-label="Burette et bécher"></svg>
+    <div class="controls">
+      <button id="plus">+ 0,5 mL</button>
+      <button id="reset" class="sec">Réinitialiser</button>
+      <input id="slider" type="range" min="0" max="20" step="0.5" value="0" aria-label="Volume de titrant A versé">
+    </div>
+    <div class="controls">
+      <label for="nb0">Quantité initiale de B : <span class="vol" id="nb0v">1,00</span> mmol</label>
+      <input id="nb0" type="range" min="1" max="20" step="1" value="20" aria-label="Quantité initiale de titré B">
+    </div>
+    <div class="legend">
+      <span><svg width="26" height="26" viewBox="-15 -15 30 30" style="width:26px">
+        <circle cx="-6" cy="0" r="4" fill="#222"/><circle cx="6" cy="0" r="4" fill="#222"/></svg>A (titrant)</span>
+      <span><svg width="26" height="26" viewBox="-15 -15 30 30" style="width:26px">
+        <circle r="10" fill="#fff" stroke="#333"/><path d="M-5 1.5 Q0 8 5 1.5" fill="none" stroke="#333" stroke-width="1.6" stroke-linecap="round"/><circle cx="-3.5" cy="-3" r="1.6" fill="#888"/><circle cx="3.5" cy="-3" r="1.6" fill="#888"/></svg>B (titré)</span>
+      <span><svg width="40" height="26" viewBox="-21 -13 42 26" style="width:40px">
+        <circle r="10" fill="#fff" stroke="#333"/><path d="M-5 1.5 Q0 8 5 1.5" fill="none" stroke="#333" stroke-width="1.6" stroke-linecap="round"/><circle cx="-3.5" cy="-3" r="1.6" fill="#888"/><circle cx="3.5" cy="-3" r="1.6" fill="#888"/>
+        <circle cx="-14" cy="0" r="4" fill="#222" stroke="#000"/><circle cx="14" cy="0" r="4" fill="#222" stroke="#000"/></svg>C (produit)</span>
+    </div>
+  </section>
+
+  <div>
+    <section class="card">
+      <h2>Équation du titrage</h2>
+      <div class="eq" role="img" aria-label="2 A + B → C" style="display:flex;justify-content:center;align-items:center;gap:10px">
+        <span>2</span>
+        <svg width="30" height="30" viewBox="-15 -15 30 30" style="width:30px"><circle cx="-6" cy="0" r="4" fill="#222"/><circle cx="6" cy="0" r="4" fill="#222"/></svg>
+        <span>+</span>
+        <svg width="30" height="30" viewBox="-15 -15 30 30" style="width:30px"><circle r="10" fill="#fff" stroke="#333"/><path d="M-5 1.5 Q0 8 5 1.5" fill="none" stroke="#333" stroke-width="1.6" stroke-linecap="round"/><circle cx="-3.5" cy="-3" r="1.6" fill="#888"/><circle cx="3.5" cy="-3" r="1.6" fill="#888"/></svg>
+        <span>→</span>
+        <svg width="46" height="30" viewBox="-23 -15 46 30" style="width:46px"><circle r="10" fill="#fff" stroke="#333"/><path d="M-5 1.5 Q0 8 5 1.5" fill="none" stroke="#333" stroke-width="1.6" stroke-linecap="round"/><circle cx="-3.5" cy="-3" r="1.6" fill="#888"/><circle cx="3.5" cy="-3" r="1.6" fill="#888"/><circle cx="-14" cy="0" r="4" fill="#222" stroke="#000"/><circle cx="14" cy="0" r="4" fill="#222" stroke="#000"/></svg>
+      </div>
+      <div>Titrant A : <i>c</i><sub>A</sub> = 0,20 mol·L⁻¹. Titré B : <i>V</i><sub>B</sub> = 10,0 mL, <i>c</i><sub>B</sub> = <span id="cb">0,100</span> mol·L⁻¹.
+           Équivalence : <i>V</i><sub>E</sub> = <span id="ve">10,0</span> mL.</div>
+    </section>
+
+    <section class="card">
+      <h2>Contenu du bécher</h2>
+      <div>Volume de A versé : <span class="vol" id="vb">0,0</span> mL</div>
+      <table>
+        <thead><tr><th>Espèce</th><th><i>n</i> (mmol)</th><th>Entités représentées</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <p class="state" id="state"></p>
+    </section>
+  </div>
+</main>
+
+<script>
+(function(){
+  const NS = "http://www.w3.org/2000/svg";
+  const CA = 0.20, VB = 10.0;                    // mol/L (titrant), mL (titré)
+  const PER = 20, MAXB = 20;                     // entités par mmol ; nombre maximal d'entités B
+  let N0 = 20;                                   // entités B initiales (réglables : 1 entité = 0,05 mmol)
+  const VMAX = 20;
+
+  const dot = (r,fill,stroke) => `<circle cx="0" cy="0" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1"/>`;
+  const sB = () => dot(10,"#ffffff","#333") +      // B : grand rond blanc avec un sourire
+    `<path d="M-5 1.5 Q0 8 5 1.5" fill="none" stroke="#333" stroke-width="1.6" stroke-linecap="round"/><circle cx="-3.5" cy="-3" r="1.6" fill="#888"/><circle cx="3.5" cy="-3" r="1.6" fill="#888"/>`;
+  // C = B et A juxtaposés : le rond blanc souriant, avec les deux ronds noirs côte à côte à sa droite
+  const sC = () => sB() +
+    `<g transform="translate(-14,0)">${dot(4,"#222","#000")}</g><g transform="translate(14,0)">${dot(4,"#222","#000")}</g>`;
+  const sA = () => `<g transform="translate(-6,0)">${dot(4,"#222","#000")}</g><g transform="translate(6,0)">${dot(4,"#222","#000")}</g>`;   // A : paire d'oreilles (deux petits ronds noirs)
+
+  // ---------- emplacements fixes ----------
+  function rng(seed){ return function(){ seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  const rand = rng(7);
+  const COLS=10, ROWS=8, X0=40, Y0=205, CW=36, CH=38;
+  const cells=[];
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) cells.push({
+    x: X0 + CW*c + CW/2 + (rand()-.5)*4,
+    y: Y0 + CH*r + CH/2 + (rand()-.5)*8
+  });
+  for(let i=cells.length-1;i>0;i--){ const j=Math.floor(rand()*(i+1)); [cells[i],cells[j]]=[cells[j],cells[i]]; }
+  const slotB = i => cells[i];          // 0..19  : titré B (devient C)
+  const slotA = k => cells[MAXB + k];   // 20..59 : titrant A en excès
+
+  // ---------- scène ----------
+  const scene = document.getElementById("scene");
+  const gBurette = document.createElementNS(NS,"g");
+  const gBeaker  = document.createElementNS(NS,"g");
+  const gEnt     = document.createElementNS(NS,"g");
+  const gEars    = document.createElementNS(NS,"g");
+  scene.append(gBurette,gBeaker,gEars,gEnt);
+
+  const BX=210, BW=24, BTOP=12, BH=140;           // 20 mL <-> 140 px
+  const yOf = v => BTOP + v*BH/VMAX;
+  let b = `<rect x="${BX}" y="${BTOP}" width="${BW}" height="${BH+12}" fill="#fff" stroke="#333" stroke-width="1.5"/>`;
+  b += `<rect id="liq" x="${BX+1}" y="${BTOP}" width="${BW-2}" height="${BH+11}" fill="#f4c4c4"/>`;
+  for(let v=0; v<=VMAX; v+=2.5){
+    const big = v%5===0;
+    b += `<line x1="${BX+BW}" y1="${yOf(v)}" x2="${BX+BW-(big?10:5)}" y2="${yOf(v)}" stroke="#333"/>`;
+    if(big) b += `<text x="${BX+BW+4}" y="${yOf(v)+4}" font-size="11" fill="#333">${v}</text>`;
+  }
+  b += `<path d="M${BX} ${BTOP+BH+12} L${BX+BW} ${BTOP+BH+12} L${BX+BW/2+3} ${BTOP+BH+34} L${BX+BW/2-3} ${BTOP+BH+34} Z" fill="#fff" stroke="#333" stroke-width="1.5"/>`;
+  b += `<text x="${BX-8}" y="${BTOP+14}" font-size="13" text-anchor="end" fill="#333">A</text>`;
+  gBurette.innerHTML = b;
+
+  gBeaker.innerHTML =
+    `<rect x="34" y="195" width="372" height="316" fill="#eef3f8"/>` +
+    `<path d="M30 175 L30 515 L410 515 L410 175" fill="none" stroke="#333" stroke-width="2.5"/>` +
+    `<text x="36" y="190" font-size="12" fill="#333" id="vtot"></text>`;
+
+  const ent = (s, sl) => `<g transform="translate(${sl.x.toFixed(1)},${sl.y.toFixed(1)})">${s}</g>`;
+  const fr = (x,d) => x.toFixed(d).replace(".",",");
+
+  function update(v){
+    const N = Math.round(CA * v * PER);           // entités de A versées (1 entité = 0,05 mmol)
+    const reacted = Math.min(N/2, N0);            // 2 A + B → C : 2 entités A consommées pour 1 B
+    const excess  = Math.max(0, N - 2*N0);
+    let html = "";
+    for(let i=0;i<N0;i++) html += ent(i<reacted ? sC() : sB(), slotB(i));
+    for(let k=0;k<excess;k++) html += ent(sA(), slotA(k));
+    gEnt.innerHTML = html;
+
+    const ly = yOf(v);
+    const liq = document.getElementById("liq");
+    liq.setAttribute("y", ly); liq.setAttribute("height", BTOP+BH+11-ly);
+    // oreilles (titrant A) dans la burette : positions fixes, visibles sous le niveau du liquide
+    let ears = "";
+    for(let r=0; r<13; r++){
+      for(let c=0; c<2; c++){
+        const ex = BX + 6.5 + 11*c;
+        const ey = BTOP + 8 + 12*r + (c ? 6 : 0);
+        if(ey - 5 >= ly && ey < BTOP+BH+10)
+          ears += `<g transform="translate(${ex},${ey}) scale(.6)">${sA()}</g>`;
+      }
+    }
+    gEars.innerHTML = ears;
+    document.getElementById("vtot").textContent = "Volume total : " + fr(VB+v,1) + " mL";
+
+    const nAv = CA*v;                             // mmol de A versés
+    const nB0 = N0 / PER;                         // mmol de B initiaux
+    const VE = 2*nB0 / CA;                        // mL à l'équivalence
+    document.getElementById("nb0v").textContent = fr(nB0,2);
+    document.getElementById("cb").textContent = fr(nB0/VB,3);
+    document.getElementById("ve").textContent = fr(VE,1);
+    const nB = Math.max(0, nB0 - nAv/2);
+    const nA = Math.max(0, nAv - 2*nB0);
+    const nC = Math.min(nAv/2, nB0);
+    const rows = [
+      ["A", nA, excess],
+      ["B", nB, N0 - reacted],
+      ["C", nC, reacted]
+    ];
+    document.getElementById("tbody").innerHTML = rows.map(r =>
+      `<tr><td>${r[0]}</td><td>${fr(r[1],2)}</td><td>${r[2]}</td></tr>`).join("");
+    document.getElementById("vb").textContent = fr(v,1);
+
+    let s;
+    if(v===0) s = "État initial : seul le titré B est présent.";
+    else if(v < VE - 1e-9) s = "Avant l'équivalence : A est le réactif limitant, il est entièrement consommé.";
+    else if(Math.abs(v - VE) < 1e-9) s = "À l'équivalence : A et B sont introduits dans les proportions stœchiométriques ; aucun n'est en excès.";
+    else s = "Après l'équivalence : B est le réactif limitant ; A est en excès.";
+    document.getElementById("state").textContent = s;
+    document.getElementById("slider").value = v;
+  }
+
+  let v = 0;
+  document.getElementById("plus").onclick = () => { v = Math.min(VMAX, v + 0.5); update(v); };
+  document.getElementById("reset").onclick = () => { v = 0; update(v); };
+  document.getElementById("slider").oninput = e => { v = parseFloat(e.target.value); update(v); };
+  document.getElementById("nb0").oninput = e => { N0 = parseInt(e.target.value, 10); v = 0; update(v); };
+  update(v);
+})();
+</script>
+</body>
+</html>

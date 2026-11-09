@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Équilibre chimique A + B ⇌ C + D</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --plot: #12141a;
+    --border: rgba(255,255,255,0.09); --text: #e6e8ec; --muted: #8b93a1;
+    --A: #4a9eff; --B: #f472b6; --C: #34d399; --D: #fbbf24; --accent: #4a9eff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: 16px; min-height: 100vh;
+  }
+  h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; letter-spacing: -0.01em; }
+  .layout { display: grid; gap: 14px; grid-template-columns: 1fr; max-width: 1280px; margin: 0 auto; }
+  @media (min-width: 900px) { .layout { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); } }
+  .col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .cards { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; }
+  .cards.three { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
+  .card .lbl { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .card .val { font-size: 21px; font-weight: 500; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  canvas { display: block; width: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--plot); }
+  .eq { white-space: nowrap; }
+  .eq .sp { display: inline-flex; align-items: center; gap: 5px; }
+  .eq .sp .dot { width: 12px; height: 12px; }
+  .beaker { position: relative; padding: 44px 30px 12px; }
+  #sim { display: block; width: 100%; aspect-ratio: 3 / 2; border: none; border-radius: 0 0 17px 17px; background: #0e1824; }
+  #glass { position: absolute; inset: 0; width: 100%; height: 100%; border: none; border-radius: 0; background: none; pointer-events: none; }
+  #chart1 { height: 290px; }
+  #chart2 { height: 210px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+  .qtys { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 18px; }
+  .qty { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .qty .nm { display: flex; align-items: center; gap: 5px; width: 22px; }
+  .qty input[type=range] { flex: 1; min-width: 0; }
+  .qty output { min-width: 70px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+  button {
+    background: var(--plot); color: var(--text); border: 1px solid var(--border);
+    border-radius: 5px; padding: 6px 14px; font-size: 13px; cursor: pointer;
+  }
+  button:hover { border-color: rgba(255,255,255,0.25); }
+  button.primary { border-color: var(--accent); }
+  .slider { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .slider input { width: 80px; accent-color: var(--accent); }
+  .slider b { color: var(--text); font-weight: 500; min-width: 22px; display: inline-block; }
+  #totalOut { font-size: 12px; color: var(--muted); }
+  #totalOut.err { color: #f87171; }
+</style>
+</head>
+<body>
+
+<h1>Équilibre chimique <span class="eq"><span class="sp"><span class="dot" style="background:var(--A)"></span>A</span> + <span class="sp"><span class="dot" style="background:var(--B)"></span>B</span> ⇌ <span class="sp"><span class="dot" style="background:var(--C)"></span>C</span> + <span class="sp"><span class="dot" style="background:var(--D)"></span>D</span></span></h1>
+
+<div class="layout">
+
+  <div class="col">
+    <div class="cards">
+      <div class="card"><div class="lbl"><span class="dot" style="background:var(--A)"></span>n(A)</div><div class="val" id="nA">0</div></div>
+      <div class="card"><div class="lbl"><span class="dot" style="background:var(--B)"></span>n(B)</div><div class="val" id="nB">0</div></div>
+      <div class="card"><div class="lbl"><span class="dot" style="background:var(--C)"></span>n(C)</div><div class="val" id="nC">0</div></div>
+      <div class="card"><div class="lbl"><span class="dot" style="background:var(--D)"></span>n(D)</div><div class="val" id="nD">0</div></div>
+    </div>
+
+    <div class="beaker" id="beaker">
+      <canvas id="sim" width="600" height="400"></canvas>
+      <canvas id="glass"></canvas>
+    </div>
+
+    <div class="panel">
+      <div class="row">
+        <span style="font-size:12px;color:var(--muted)">Quantités de matière initiales (1 point = 1 mmol) — relâcher un curseur relance la simulation</span>
+        <span id="totalOut"></span>
+      </div>
+      <div class="qtys">
+        <label class="qty"><span class="nm"><span class="dot" style="background:var(--A)"></span>A</span><input type="range" id="qA" value="0.50" min="0" max="1" step="0.01"><output id="oA">500</output></label>
+        <label class="qty"><span class="nm"><span class="dot" style="background:var(--B)"></span>B</span><input type="range" id="qB" value="0.50" min="0" max="1" step="0.01"><output id="oB">500</output></label>
+        <label class="qty"><span class="nm"><span class="dot" style="background:var(--C)"></span>C</span><input type="range" id="qC" value="0" min="0" max="1" step="0.01"><output id="oC">0</output></label>
+        <label class="qty"><span class="nm"><span class="dot" style="background:var(--D)"></span>D</span><input type="range" id="qD" value="0" min="0" max="1" step="0.01"><output id="oD">0</output></label>
+      </div>
+      <div class="row">
+        <button class="primary" id="btnApply">Redémarrer</button>
+        <button id="btnPause">Pause</button>
+        <label class="slider">k₁ <input type="range" id="k1Slider" min="1" max="20" step="1" value="8"><b id="k1Out">8</b></label>
+        <label class="slider">k₋₁ <input type="range" id="km1Slider" min="1" max="20" step="1" value="4"><b id="km1Out">4</b></label>
+        <label class="slider">Vitesse <input type="range" id="speedSlider" min="0.5" max="4" step="0.5" value="2"><b id="speedOut">×2</b></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="cards three">
+      <div class="card"><div class="lbl">Q = [C][D] / [A][B]</div><div class="val" id="qVal">—</div></div>
+      <div class="card"><div class="lbl">K = k₁ / k₋₁</div><div class="val" id="kVal">—</div></div>
+      <div class="card"><div class="lbl">État</div><div class="val" id="etatVal" style="font-size:16px;line-height:1.6">—</div></div>
+    </div>
+    <canvas id="chart1"></canvas>
+    <canvas id="chart2"></canvas>
+  </div>
+
+</div>
+
+<script>
+// ==PHYSICS-START==
+const W = 600, H = 400, R = 4, DIAM = 8, MAXN = 2000, SPEED0 = 120;
+const GC = Math.ceil(W / DIAM), GR = Math.ceil(H / DIAM);
+const px = new Float32Array(MAXN), py = new Float32Array(MAXN);
+const pvx = new Float32Array(MAXN), pvy = new Float32Array(MAXN);
+const ptype = new Uint8Array(MAXN);              // 0 = A, 1 = B, 2 = C, 3 = D
+const cellHead = new Int32Array(GC * GR), nxt = new Int32Array(MAXN);
+const NEIGHBORS = [[1, 0], [-1, 1], [0, 1], [1, 1]];
+let N = 0, k1 = 8, km1 = 4;
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+}
+
+function initParticles(q) {
+  N = q[0] + q[1] + q[2] + q[3];
+  const types = [];
+  for (let t = 0; t < 4; t++) for (let n = 0; n < q[t]; n++) types.push(t);
+  shuffle(types);
+  const cols = Math.ceil(Math.sqrt(N * W / H)), rows = Math.ceil(N / cols);
+  const sx = W / cols, sy = H / rows;
+  const slots = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) slots.push([c, r]);
+  shuffle(slots);
+  for (let i = 0; i < N; i++) {
+    const [c, r] = slots[i];
+    px[i] = Math.min(W - R, Math.max(R, (c + 0.5) * sx + (Math.random() - 0.5) * Math.max(0, sx - DIAM)));
+    py[i] = Math.min(H - R, Math.max(R, (r + 0.5) * sy + (Math.random() - 0.5) * Math.max(0, sy - DIAM)));
+    const a = Math.random() * 2 * Math.PI;
+    pvx[i] = Math.cos(a) * SPEED0; pvy[i] = Math.sin(a) * SPEED0;
+    ptype[i] = types[i];
+  }
+}
+
+// Choc élastique (masses égales) + réaction éventuelle, à chaque contact réel
+function pair(i, j) {
+  const dx = px[j] - px[i], dy = py[j] - py[i];
+  const d2 = dx * dx + dy * dy;
+  if (d2 >= DIAM * DIAM || d2 < 1e-9) return;
+  const d = Math.sqrt(d2), nx = dx / d, ny = dy / d;
+  const ov = (DIAM - d) * 0.5;
+  px[i] -= nx * ov; py[i] -= ny * ov; px[j] += nx * ov; py[j] += ny * ov;
+  const dvn = (pvx[i] - pvx[j]) * nx + (pvy[i] - pvy[j]) * ny;
+  if (dvn <= 0) return;                           // déjà en éloignement : pas de choc
+  pvx[i] -= dvn * nx; pvy[i] -= dvn * ny;
+  pvx[j] += dvn * nx; pvy[j] += dvn * ny;
+
+  const s = ptype[i] + ptype[j];
+  if (s === 1) {                                  // A + B
+    if (Math.random() < Math.min(0.9, k1 / 40)) {
+      ptype[i] = ptype[i] === 0 ? 2 : 3;
+      ptype[j] = ptype[j] === 0 ? 2 : 3;
+    }
+  } else if (s === 5) {                           // C + D
+    if (Math.random() < Math.min(0.9, km1 / 40)) {
+      ptype[i] = ptype[i] === 2 ? 0 : 1;
+      ptype[j] = ptype[j] === 2 ? 0 : 1;
+    }
+  }
+}
+
+function stepPhysics(dt) {
+  for (let i = 0; i < N; i++) {
+    px[i] += pvx[i] * dt; py[i] += pvy[i] * dt;
+    if (px[i] < R)     { px[i] = R;     pvx[i] =  Math.abs(pvx[i]); }
+    if (px[i] > W - R) { px[i] = W - R; pvx[i] = -Math.abs(pvx[i]); }
+    if (py[i] < R)     { py[i] = R;     pvy[i] =  Math.abs(pvy[i]); }
+    if (py[i] > H - R) { py[i] = H - R; pvy[i] = -Math.abs(pvy[i]); }
+  }
+  cellHead.fill(-1);
+  for (let i = 0; i < N; i++) {
+    const cx = Math.min(GC - 1, Math.floor(px[i] / DIAM));
+    const cy = Math.min(GR - 1, Math.floor(py[i] / DIAM));
+    const c = cy * GC + cx;
+    nxt[i] = cellHead[c]; cellHead[c] = i;
+  }
+  for (let cy = 0; cy < GR; cy++) {
+    for (let cx = 0; cx < GC; cx++) {
+      let i = cellHead[cy * GC + cx];
+      while (i !== -1) {
+        let j = nxt[i];
+        while (j !== -1) { pair(i, j); j = nxt[j]; }
+        for (let k = 0; k < 4; k++) {
+          const ax = cx + NEIGHBORS[k][0], ay = cy + NEIGHBORS[k][1];
+          if (ax < 0 || ax >= GC || ay >= GR) continue;
+          j = cellHead[ay * GC + ax];
+          while (j !== -1) { pair(i, j); j = nxt[j]; }
+        }
+        i = nxt[i];
+      }
+    }
+  }
+}
+
+function countTypes() {
+  const c = [0, 0, 0, 0];
+  for (let i = 0; i < N; i++) c[ptype[i]]++;
+  return c;
+}
+// ==PHYSICS-END==
+
+// ---------- Interface ----------
+const COLS = ['#4a9eff', '#f472b6', '#34d399', '#fbbf24'];
+const N_PER_MOL = 1000;   // 1 point = 1 mmol
+function fmtMol(nPts, d) { return (nPts / N_PER_MOL).toFixed(d === undefined ? 3 : d).replace('.', ',') + ' mol'; }
+const NAMES = ['A', 'B', 'C', 'D'];
+const simCv = document.getElementById('sim'), sctx = simCv.getContext('2d');
+const c1 = document.getElementById('chart1'), c2 = document.getElementById('chart2');
+
+// Historique (échantillon toutes les 0,1 s simulée)
+const HLEN = 600, SAMPLE_DT = 0.1;
+const hc = [0, 1, 2, 3].map(() => new Int16Array(HLEN));
+const hq = new Float32Array(HLEN), ht = new Float32Array(HLEN);
+let hhead = 0, hlen = 0;
+let paused = false, speed = 2, last = null, simTime = 0, nextSample = 0;
+
+function qOf(c) { return c[0] * c[1] > 0 ? (c[2] * c[3]) / (c[0] * c[1]) : NaN; }
+function hidx(k) { return (hhead - hlen + k + HLEN * 2) % HLEN; }
+
+function sample() {
+  const c = countTypes();
+  for (let t = 0; t < 4; t++) hc[t][hhead] = c[t];
+  hq[hhead] = qOf(c); ht[hhead] = simTime;
+  hhead = (hhead + 1) % HLEN; if (hlen < HLEN) hlen++;
+}
+
+function readQuantities() {
+  const q = ['qA', 'qB', 'qC', 'qD'].map(id => Math.max(0, Math.round((Number(document.getElementById(id).value) || 0) * N_PER_MOL)));
+  return q;
+}
+
+function updateTotal() {
+  const q = readQuantities(), tot = q.reduce((a, b) => a + b, 0);
+  ['A', 'B', 'C', 'D'].forEach((n, i) => document.getElementById('o' + n).textContent = fmtMol(q[i], 2));
+  const el = document.getElementById('totalOut');
+  el.textContent = 'Total : ' + fmtMol(tot, 2) + ' (max ' + fmtMol(MAXN, 2) + ')';
+}
+
+function applyQuantities() {
+  const q = readQuantities(), tot = q.reduce((a, b) => a + b, 0);
+  initParticles(q);
+  hhead = 0; hlen = 0; simTime = 0; nextSample = 0; last = null;
+  sample(); nextSample = SAMPLE_DT;
+  updateTotal();
+}
+
+// ---------- Dessin ----------
+function setupCanvas(cv) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth, h = cv.clientHeight;
+  const bw = Math.round(w * dpr), bh = Math.round(h * dpr);
+  if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  return { ctx, w, h };
+}
+
+function drawSim() {
+  sctx.fillStyle = '#0e1824';
+  sctx.fillRect(0, 0, W, H);
+  for (let t = 0; t < 4; t++) {
+    sctx.fillStyle = COLS[t];
+    sctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      if (ptype[i] !== t) continue;
+      sctx.moveTo(px[i] + R, py[i]);
+      sctx.arc(px[i], py[i], R, 0, Math.PI * 2);
+    }
+    sctx.fill();
+  }
+}
+
+function drawFrame(ctx, w, h, pad, yTicks, yFmt, tMin, tMax) {
+  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+  ctx.lineWidth = 1; ctx.font = '11px system-ui, sans-serif';
+  yTicks.forEach(f => {
+    const y = pad.t + ph * (1 - f.pos);
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    ctx.fillStyle = '#8b93a1'; ctx.textAlign = 'right';
+    ctx.fillText(yFmt(f.value), pad.l - 6, y + 4);
+  });
+  ctx.textAlign = 'center'; ctx.fillStyle = '#8b93a1';
+  for (let k = 0; k <= 4; k++) {
+    const x = pad.l + pw * k / 4;
+    ctx.fillText((tMin + (tMax - tMin) * k / 4).toFixed(0) + ' s', x, h - 8);
+  }
+}
+
+function drawChart1(c) {
+  const { ctx, w, h } = setupCanvas(c1);
+  const pad = { l: 44, r: 12, t: 34, b: 26 };
+  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+  const NS = Math.max(N, 200);   // échelle du graphique (bécher vide : 0,20 mol)
+  // légende (au-dessus de la zone de tracé, sans masquer les courbes)
+  for (let t = 0; t < 4; t++) {
+    const x0 = pad.l + t * (pw / 4);
+    ctx.strokeStyle = COLS[t]; ctx.lineWidth = 2.5;
+    ctx.setLineDash(t === 1 || t === 3 ? [5, 3] : []);
+    ctx.beginPath(); ctx.moveTo(x0, 16); ctx.lineTo(x0 + 18, 16); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#e6e8ec'; ctx.font = '12px system-ui, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('n(' + NAMES[t] + ') = ' + fmtMol(c[t]), x0 + 24, 20);
+  }
+  if (hlen < 2) return;
+  const tMin = ht[hidx(0)]; let tMax = ht[hidx(hlen - 1)];
+  if (tMax - tMin < 1) tMax = tMin + 1;
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map(p => ({ pos: p, value: p * NS }));
+  drawFrame(ctx, w, h, pad, ticks, v => (v / N_PER_MOL).toFixed(2).replace('.', ','), tMin, tMax);
+  ctx.fillStyle = '#8b93a1'; ctx.font = '10px system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.fillText('n (mol)', 4, pad.t - 10);
+  for (let t = 0; t < 4; t++) {
+    ctx.strokeStyle = COLS[t]; ctx.lineWidth = 2;
+    ctx.setLineDash(t === 1 || t === 3 ? [5, 3] : []);
+    ctx.beginPath();
+    for (let k = 0; k < hlen; k++) {
+      const i = hidx(k);
+      const x = pad.l + (ht[i] - tMin) / (tMax - tMin) * pw;
+      const y = pad.t + ph * (1 - hc[t][i] / NS);
+      k === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+}
+
+function drawChart2() {
+  const { ctx, w, h } = setupCanvas(c2);
+  const pad = { l: 44, r: 12, t: 34, b: 26 };
+  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+  const K = k1 / km1;
+  ctx.fillStyle = '#e6e8ec'; ctx.font = '12px system-ui, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('Q(t)', pad.l, 20);
+  ctx.strokeStyle = '#c4b5fd'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(pad.l + 38, 16); ctx.lineTo(pad.l + 56, 16); ctx.stroke();
+  ctx.strokeStyle = '#e6e8ec'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.moveTo(pad.l + 90, 16); ctx.lineTo(pad.l + 108, 16); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#e6e8ec'; ctx.fillText('K = ' + K.toFixed(2), pad.l + 114, 20);
+  if (hlen < 2) return;
+  const tMin = ht[hidx(0)]; let tMax = ht[hidx(hlen - 1)];
+  if (tMax - tMin < 1) tMax = tMin + 1;
+  let m = K * 1.5;
+  for (let k = 0; k < hlen; k++) { const q = hq[hidx(k)]; if (isFinite(q)) m = Math.max(m, Math.min(q, K * 4)); }
+  const ymax = m * 1.05;
+  const ticks = [0, 0.5, 1].map(p => ({ pos: p, value: p * ymax }));
+  drawFrame(ctx, w, h, pad, ticks, v => v.toFixed(ymax < 10 ? 1 : 0), tMin, tMax);
+  const yK = pad.t + ph * (1 - K / ymax);
+  ctx.strokeStyle = '#e6e8ec'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.moveTo(pad.l, yK); ctx.lineTo(w - pad.r, yK); ctx.stroke(); ctx.setLineDash([]);
+  ctx.strokeStyle = '#c4b5fd'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  let pen = false;
+  for (let k = 0; k < hlen; k++) {
+    const i = hidx(k), q = hq[i];
+    if (!isFinite(q)) { pen = false; continue; }
+    const x = pad.l + (ht[i] - tMin) / (tMax - tMin) * pw;
+    const y = pad.t + ph * (1 - Math.min(q, ymax) / ymax);
+    pen ? ctx.lineTo(x, y) : ctx.moveTo(x, y); pen = true;
+  }
+  ctx.stroke();
+}
+
+function updateMetrics(c) {
+  ['nA', 'nB', 'nC', 'nD'].forEach((id, t) => document.getElementById(id).textContent = fmtMol(c[t]));
+  const K = k1 / km1;
+  document.getElementById('kVal').textContent = K.toFixed(2);
+  const q = qOf(c);
+  document.getElementById('qVal').textContent = isFinite(q) ? q.toFixed(2) : (c[2] * c[3] > 0 ? '∞' : '—');
+  const ev = document.getElementById('etatVal');
+  if (c[0] * c[1] === 0 && c[2] * c[3] === 0) { ev.textContent = 'Aucune réaction possible'; ev.style.color = '#8b93a1'; return; }
+  let s = 0, n = 0;
+  for (let k = Math.max(0, hlen - 20); k < hlen; k++) { const v = hq[hidx(k)]; if (isFinite(v)) { s += v; n++; } }
+  if (hlen < 20 || n < 10) { ev.textContent = 'Démarrage'; ev.style.color = '#8b93a1'; return; }
+  const qm = s / n;
+  if (Math.abs(qm - K) / K < 0.1) { ev.textContent = 'Équilibre (Q ≈ K)'; ev.style.color = '#34d399'; }
+  else if (qm < K) { ev.textContent = '→ sens direct (Q < K)'; ev.style.color = '#4a9eff'; }
+  else { ev.textContent = '← sens inverse (Q > K)'; ev.style.color = '#f472b6'; }
+}
+
+// ---------- Bécher ----------
+const beaker = document.getElementById('beaker');
+const glass = document.getElementById('glass');
+const gctx = glass.getContext('2d');
+const BP = { l: 30, r: 30, t: 44, b: 12 };   // identique au padding de .beaker
+
+function drawGlass() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = beaker.clientWidth, h = beaker.clientHeight;
+  glass.width = Math.round(w * dpr); glass.height = Math.round(h * dpr);
+  const g = gctx;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  const xo = 21, xi = BP.l, yTop = 28, yBo = h - 2, yBi = h - BP.b, yL = BP.t;
+  const R = 26, r = 17;
+  g.lineJoin = 'round'; g.lineWidth = 1.5;
+  g.strokeStyle = 'rgba(205,232,255,0.62)'; g.fillStyle = 'rgba(170,215,255,0.16)';
+
+  // paroi et fond épais
+  g.beginPath();
+  g.moveTo(xo, yTop);
+  g.lineTo(xo, yBo - R);
+  g.arcTo(xo, yBo, xo + R, yBo, R);
+  g.lineTo(w - xo - R, yBo);
+  g.arcTo(w - xo, yBo, w - xo, yBo - R, R);
+  g.lineTo(w - xo, yTop);
+  g.lineTo(w - xi, yTop);
+  g.lineTo(w - xi, yBi - r);
+  g.arcTo(w - xi, yBi, w - xi - r, yBi, r);
+  g.lineTo(xi + r, yBi);
+  g.arcTo(xi, yBi, xi, yBi - r, r);
+  g.lineTo(xi, yTop);
+  g.closePath();
+  g.fill(); g.stroke();
+
+  // bec verseur (à gauche)
+  g.beginPath();
+  g.moveTo(19, 17); g.quadraticCurveTo(9, 18, 3, 26); g.quadraticCurveTo(10, 28, 19, 29);
+  g.closePath();
+  g.fill(); g.stroke();
+
+  // collerette
+  g.beginPath(); g.roundRect(15, 16, w - 30, 13, 5); g.fill(); g.stroke();
+
+  // surface du liquide (ménisque)
+  g.beginPath();
+  g.moveTo(xi, yL - 4); g.quadraticCurveTo(xi + 1, yL, xi + 9, yL);
+  g.lineTo(w - xi - 9, yL); g.quadraticCurveTo(w - xi - 1, yL, w - xi, yL - 4);
+  g.stroke();
+
+  // reflets
+  g.fillStyle = 'rgba(255,255,255,0.08)';
+  g.beginPath(); g.roundRect(xi + 7, yL + 20, 5, (yBi - yL) * 0.5, 3); g.fill();
+  g.fillStyle = 'rgba(255,255,255,0.05)';
+  g.beginPath(); g.roundRect(xi + 7, yL + 30 + (yBi - yL) * 0.5, 5, 12, 3); g.fill();
+
+  // graduations (250 mL, trait tous les 10 mL, valeur tous les 50 mL)
+  g.lineWidth = 1; g.strokeStyle = 'rgba(255,255,255,0.5)';
+  g.fillStyle = 'rgba(255,255,255,0.7)';
+  g.font = '10px system-ui, sans-serif'; g.textAlign = 'right'; g.textBaseline = 'middle';
+  for (let v = 10; v < 250; v += 10) {
+    const y = yBi - (v / 250) * (yBi - yL);
+    const major = v % 50 === 0, len = major ? 16 : 9;
+    g.beginPath(); g.moveTo(w - xi, y); g.lineTo(w - xi - len, y); g.stroke();
+    if (major) g.fillText(String(v), w - xi - len - 4, y);
+  }
+  g.fillText('250 mL', w - xi - 6, (yTop + yL) / 2 + 1);
+}
+
+function render() {
+  const c = countTypes();
+  drawSim(); updateMetrics(c); drawChart1(c); drawChart2();
+}
+
+function frame(ts) {
+  if (!paused) {
+    if (last !== null) {
+      const dtf = Math.min((ts - last) / 1000, 0.05) * speed;
+      const ns = Math.max(1, Math.ceil(dtf / 0.015));
+      for (let s = 0; s < ns; s++) {
+        stepPhysics(dtf / ns); simTime += dtf / ns;
+        if (simTime >= nextSample) { sample(); nextSample += SAMPLE_DT; }
+      }
+    }
+    last = ts;
+  }
+  render();
+  requestAnimationFrame(frame);
+}
+
+// ---------- Contrôles ----------
+document.getElementById('btnApply').addEventListener('click', applyQuantities);
+['qA', 'qB', 'qC', 'qD'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    // le total ne peut pas dépasser MAXN : on borne le curseur déplacé
+    const tot = readQuantities().reduce((a, b) => a + b, 0);
+    if (tot > MAXN) el.value = Math.max(0, (Number(el.value) * N_PER_MOL - (tot - MAXN)) / N_PER_MOL).toFixed(2);
+    updateTotal();
+  });
+  el.addEventListener('change', applyQuantities);   // relâchement du curseur
+});
+document.getElementById('btnPause').addEventListener('click', function () {
+  paused = !paused; this.textContent = paused ? 'Reprendre' : 'Pause'; if (!paused) last = null;
+});
+document.getElementById('k1Slider').addEventListener('input', function () { k1 = +this.value; document.getElementById('k1Out').textContent = k1; });
+document.getElementById('km1Slider').addEventListener('input', function () { km1 = +this.value; document.getElementById('km1Out').textContent = km1; });
+document.getElementById('speedSlider').addEventListener('input', function () { speed = +this.value; document.getElementById('speedOut').textContent = '×' + speed; });
+
+new ResizeObserver(drawGlass).observe(beaker);
+drawGlass();
+applyQuantities();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

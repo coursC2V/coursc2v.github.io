@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chimie analytique – Flashcards</title>
+<style>
+  :root { --bg:#000; --fg:#fff; --card:#000; --accent:#9db8ee; --muted:#9aa0ab; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; flex-direction:column; align-items:center;
+         justify-content:center; gap:1.2rem; padding:1.5rem; background:var(--bg); color:var(--fg);
+         font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  h1 { font-size:1.1rem; font-weight:600; margin:0; color:var(--muted); }
+  .card { width:min(720px,100%); min-height:min(400px,62vh); cursor:pointer; background:var(--card);
+          border:1px solid #444; border-radius:14px; padding:1.6rem 1.8rem; display:flex;
+          flex-direction:column; justify-content:center; gap:1.2rem; font-size:1.2rem; line-height:1.6; }
+  #q { color:var(--fg); }
+  #a { display:none; color:#a8a8a8; border-top:1px solid #444; padding-top:1.2rem; }
+  .card.shown #a { display:block; }
+  .nav { display:flex; align-items:center; gap:1rem; }
+  button { font:inherit; padding:.5rem 1.1rem; border:1px solid var(--accent); background:transparent;
+           color:var(--accent); border-radius:8px; cursor:pointer; }
+  button:hover { background:var(--accent); color:var(--bg); }
+  #count { min-width:5rem; text-align:center; color:var(--muted); }
+  .nuc { display:inline-flex; align-items:center; }
+  .nuc .ns { display:inline-flex; flex-direction:column; font-size:.7em; line-height:1.05; margin-right:.1em; text-align:right; }
+  .eq { margin-top:.6rem; }
+  .bar { text-decoration:overline; }
+  .frac { display:inline-block; vertical-align:middle; text-align:center; }
+  .frac > span { display:block; padding:0 .25em; }
+  .frac > span:first-child { border-bottom:1px solid currentColor; }
+  ol, ul { margin:.3rem 0 0; padding-left:1.4rem; }
+  .page { margin-top:.9rem; font-size:.95rem; color:#7d7d7d; }
+  #consigne { margin:0; color:var(--muted); font-size:1.1rem; }
+  [hidden] { display:none !important; }
+  #start { display:flex; flex-direction:column; align-items:center; gap:1.4rem; text-align:center; }
+  #start label { font-size:1.6rem; line-height:1.4; }
+  #start input { font:inherit; font-size:2rem; width:6rem; text-align:center; padding:.4rem;
+                 background:#000; color:var(--fg); border:1px solid #666; border-radius:8px; }
+  #start button { font-size:1.2rem; padding:.7rem 1.8rem; }
+</style>
+</head>
+<body>
+<h1>Chimie analytique – Terminale spécialité</h1>
+<form id="start" novalidate>
+  <label for="n">Combien de flashcards ?<br><small id="hint" style="color:var(--muted);font-size:1rem"></small></label>
+  <input id="n" type="number" min="1" value="10" inputmode="numeric">
+  <button type="submit">Commencer</button>
+  <p id="consigne">Pour chaque carte, cliquer dessus pour afficher la réponse.</p>
+</form>
+<div class="card" id="card" title="Cliquer pour afficher la réponse" hidden>
+  <div id="q"></div>
+  <div id="a"></div>
+</div>
+<div class="nav" id="nav" hidden>
+  <button id="prev" type="button">←</button>
+  <span id="count"></span>
+  <button id="next" type="button">→</button>
+</div>
+
+<script>
+// Noyau ou particule : A en haut, Z en bas, puis le symbole
+const NUC = (A,Z,X) => '<span class="nuc"><span class="ns"><span>'+A+'</span><span>'+Z+'</span></span>'+X+'</span>';
+// Fraction
+const F = (n,d) => '<span class="frac"><span>'+n+'</span><span>'+d+'</span></span>';
+const EQ = s => '<div class="eq">'+s+'</div>';
+
+const nu  = '<span class="bar">ν</span><sub>e</sub>';
+const eqX = (Ap,Zp) => NUC('$A$','$Z$','X') + ' → ' + NUC(Ap,Zp,'Y');
+
+const cards = [
+
+ /* ===== Leçon I – Transformations acide-base ===== */
+ ["Quelle particule un acide de Brønsted est-il capable de céder ?", "Un proton H<sup>+</sup>.", 5],
+ ["Quelle particule une base de Brønsted est-elle capable de capter ?", "Un proton H<sup>+</sup>.", 5],
+ ["Quelle est la demi-équation acido-basique du couple AH / A<sup>−</sup> ?", EQ("AH → A<sup>−</sup> + H<sup>+</sup>"), 5],
+ ["Comment qualifie-t-on l’acide AH et la base A<sup>−</sup> d’un même couple AH / A<sup>−</sup> ?", "Ils sont conjugués.", 5],
+ ["Quelle est la réaction acido-basique entre l’acide A<sub>1</sub>H d’un couple et la base A<sub>2</sub><sup>−</sup> d’un autre couple ?",
+  EQ("A<sub>1</sub>H + A<sub>2</sub><sup>−</sup> → A<sub>1</sub><sup>−</sup> + A<sub>2</sub>H") + "Les deux espèces s’échangent un proton.", 5],
+ ["Quels sont les deux couples acide/base dans lesquels intervient l’eau ?", "H<sub>3</sub>O<sup>+</sup> / H<sub>2</sub>O et H<sub>2</sub>O / HO<sup>−</sup>.", 6],
+ ["Comment qualifie-t-on une espèce, comme l’eau, qui est à la fois acide et base ?", "Une espèce amphotère.", 6],
+ ["Quel est le couple acide/base de l’ion ammonium NH<sub>4</sub><sup>+</sup> ?", "NH<sub>4</sub><sup>+</sup> / NH<sub>3</sub> (ion ammonium / ammoniac).", 6],
+ ["Un diacide AH<sub>2</sub> est capable de libérer deux H<sup>+</sup>. Quels sont les deux couples acide/base correspondants ?", "AH<sub>2</sub> / AH<sup>−</sup> et AH<sup>−</sup> / A<sup>2−</sup>.", 6],
+
+ /* ===== Leçon II – pH des solutions aqueuses d’acides forts ===== */
+ ["Quelle est la définition du pH d’une solution aqueuse, en fonction de [H<sub>3</sub>O<sup>+</sup>] et de la concentration standard $c$°&nbsp;?",
+  EQ("pH = −log(" + F("[H<sub>3</sub>O<sup>+</sup>]", "$c$°") + ")"), 7],
+ ["Quelle est la valeur de la concentration standard $c$° ?", "$c$° = 1 mol L<sup>−1</sup>. Elle ne sert qu’à rendre sans dimension le nombre dans le logarithme.", 7],
+ ["Quelle est l’expression de [H<sub>3</sub>O<sup>+</sup>] en fonction du pH et de $c$° ?", EQ("[H<sub>3</sub>O<sup>+</sup>] = $c$°·10<sup>−pH</sup>"), 7],
+ ["Une solution d’acide chlorhydrique a une concentration [H<sub>3</sub>O<sup>+</sup>] = 1,0 × 10<sup>−3</sup> mol L<sup>−1</sup>. Quel est son pH ?",
+  EQ("pH = −log(" + F("1,0 × 10<sup>−3</sup>", "1") + ") = 3,0"), 7],
+ ["Quelle est la fonction réciproque de la fonction $x$ ↦ 10<sup>$x$</sup> ?", "Le logarithme décimal, noté log($x$) : $y$ = log($x$) ⇔ 10<sup>$y$</sup> = $x$.", 7],
+ ["Quelle est la réaction d’un acide fort AH avec l’eau ?", EQ("AH + H<sub>2</sub>O → A<sup>−</sup> + H<sub>3</sub>O<sup>+</sup>") + "La réaction est totale : l’acide disparaît totalement s’il est dissous dans suffisamment d’eau.", 7],
+ ["Quelle est la réaction d’un acide faible AH avec l’eau ?", EQ("AH + H<sub>2</sub>O ⇌ A<sup>−</sup> + H<sub>3</sub>O<sup>+</sup>") + "La réaction est partielle.", 7],
+ ["Quel est le pH d’une solution d’acide fort de concentration $c$, en fonction de $c$ et de $c$° ?",
+  EQ("pH = −log(" + F("$c$", "$c$°") + ")") + "Cette relation est fausse pour un acide faible.", 8],
+ ["On dissout une masse $m$ = 1,0 g de chlorure d’hydrogène HCl (acide fort du couple HCl / Cl<sup>−</sup>) dans 1,0 L d’eau. Donnée : $M$(HCl) = 36,5 g mol<sup>−1</sup>. Quel est le pH de la solution obtenue ?",
+  EQ("$c$ = " + F("$m$", "$M$·$V$") + " = " + F("1,0", "36,5 × 1,0") + " ≈ 2,7 × 10<sup>−2</sup> mol L<sup>−1</sup>") + EQ("pH = −log(2,7 × 10<sup>−2</sup>) ≈ 1,6"), 8],
+ ["Quelle condition sur le pH caractérise une solution acide ? une solution basique ?", "Solution acide : pH < 7. Solution basique : pH > 7.", 8],
+ ["Une solution contenant l’ion éthanoate CH<sub>3</sub>COO<sup>−</sup> a un pH égal à 6. La solution est-elle acide ou basique, et l’ion éthanoate est-il un acide ou une base ?",
+  "La solution est acide (pH < 7). L’ion éthanoate, ion carboxylate, est une base : une solution contenant une espèce basique peut être acide.", 8],
+
+ /* ===== Leçon III – Dosage par étalonnage spectrophotométrique ===== */
+ ["Quel appareil permet de mesurer l’absorbance d’une solution à une longueur d’onde donnée ?", "Un spectrophotomètre.", 9],
+ ["Quelle est la loi de Beer-Lambert pour une solution ne contenant qu’une espèce colorée X, d’épaisseur $ℓ$, à une longueur d’onde $λ$ donnée ?",
+  EQ("$A$<sub>solution</sub> = $ε$<sub>X,$λ$</sub>·$ℓ$·[X]"), 9],
+ ["Pour quelles concentrations en espèce colorée X la loi de Beer-Lambert est-elle valable ?", "Pour [X] < 10<sup>−2</sup> mol L<sup>−1</sup>.", 9],
+ ["Dans la loi de Beer-Lambert $A$ = $ε$<sub>X,$λ$</sub>·$ℓ$·[X], comment s’appelle $ε$<sub>X,$λ$</sub> et de quoi dépend-il ?", "C’est le coefficient d’absorption molaire. Il dépend de l’espèce X et de la longueur d’onde.", 9],
+ ["Quelle est l’unité de l’absorbance $A$ ?", "L’absorbance n’a pas d’unité.", 9],
+ ["Sur quelle longueur d’onde règle-t-on un spectrophotomètre pour minimiser les incertitudes de mesure ?", "Sur la longueur d’onde correspondant au maximum d’absorption de la solution étudiée.", 9],
+ ["Comment appelle-t-on les solutions de concentrations parfaitement connues, contenant le même soluté coloré que la solution à analyser, dont on mesure l’absorbance pour tracer la droite d’étalonnage ?", "Les solutions étalon.", 11],
+ ["Dans un dosage par étalonnage spectrophotométrique, comment détermine-t-on la concentration inconnue $c$<sub>inc</sub> à partir de la droite d’étalonnage $A$ = $f$($c$) ?",
+  "On mesure l’absorbance $A$<sub>inc</sub> de la solution inconnue à la même longueur d’onde que celle de la droite d’étalonnage. L’abscisse du point d’ordonnée $A$<sub>inc</sub> est $c$<sub>inc</sub>.", 11],
+
+ /* ===== Leçon IV – Dosage par étalonnage conductimétrique ===== */
+ ["Quelle est la loi de Kohlrausch donnant la contribution $σ$<sub>i</sub> d’un ion X<sub>i</sub> à la conductivité d’une solution aqueuse ?",
+  EQ("$σ$<sub>i</sub> = $λ$<sub>i</sub>·[X<sub>i</sub>]"), 13],
+ ["Dans la loi de Kohlrausch $σ$<sub>i</sub> = $λ$<sub>i</sub>·[X<sub>i</sub>], comment s’appelle $λ$<sub>i</sub> ?", "La conductivité molaire ionique de l’ion X<sub>i</sub>.", 13],
+ ["Comment s’obtient la conductivité $σ$<sub>solution</sub> d’une solution aqueuse en fonction des contributions $σ$<sub>i</sub> de chacun des ions dissous ?", EQ("$σ$<sub>solution</sub> = Σ $σ$<sub>i</sub>"), 13],
+ ["Pour quelles concentrations la loi de Kohlrausch est-elle valable ?", "Pour des solutions de concentration $c$ < 10<sup>−2</sup> mol L<sup>−1</sup>.", 13],
+ ["Pourquoi ajoute-t-on quelques centaines de millilitres d’eau déionisée lors d’un dosage par étalonnage conductimétrique ?", "Pour travailler à une concentration inférieure à 10<sup>−2</sup> mol L<sup>−1</sup>, domaine de validité de la loi de Kohlrausch.", 13],
+ ["Quand $λ$<sub>i</sub> est donné en S m<sup>2</sup> mol<sup>−1</sup>, dans quelle unité doit-on exprimer la concentration ?", "En mol m<sup>−3</sup>.", 13],
+ ["Convertir dans le SI la concentration $c$ = 1,0 × 10<sup>−2</sup> mol L<sup>−1</sup>.", EQ("$c$ = 1,0 × 10<sup>−2</sup> × 10<sup>3</sup> = 10 mol m<sup>−3</sup>"), 13],
+ ["Une solution de chlorure de sodium a pour concentration $c$ = 1,0 × 10<sup>−2</sup> mol L<sup>−1</sup>. Données à 25 °C : $λ$(Na<sup>+</sup>) = 5,01 × 10<sup>−3</sup> S m<sup>2</sup> mol<sup>−1</sup> ; $λ$(Cl<sup>−</sup>) = 7,63 × 10<sup>−3</sup> S m<sup>2</sup> mol<sup>−1</sup>. Quelle est la conductivité de la solution ?",
+  EQ("$σ$ = ($λ$(Na<sup>+</sup>) + $λ$(Cl<sup>−</sup>))·$c$ = (5,01 + 7,63) × 10<sup>−3</sup> × 10 ≈ 0,126 S m<sup>−1</sup>"), 13],
+ ["Quelle grandeur un conductimètre mesure-t-il directement ?", "La conductance $G$ de la portion de solution contenue entre les plaques de sa cellule.", 14],
+ ["Quelle est la relation entre la conductance $G$ d’une portion de solution et sa résistance $R$ ?", EQ("$G$ = " + F("1", "$R$")) + "$G$ en siemens (S), $R$ en ohms (Ω).", 14],
+ ["Quelle est la relation entre la conductance $G$ d’une portion de solution et sa conductivité $σ$ ?", EQ("$G$ = $k$·$σ$") + "$k$ est le facteur de cellule.", 14],
+ ["De quoi dépend le facteur de cellule $k$ d’une cellule conductimétrique ?", "De la surface $S$ des plaques de la cellule et de l’écart $ℓ$ entre elles.", 14],
+ ["Quelle relation lie la conductance $G$ d’une portion de solution ionique à sa concentration $c$, pour $c$ < 10<sup>−2</sup> mol L<sup>−1</sup> ?", EQ("$G$ = $k$′·$c$") + "$k$′ est une constante.", 14],
+ ["Une cellule conductimétrique de facteur $k$ = 1,000 cm plonge dans une solution de conductivité $σ$ = 0,126 S m<sup>−1</sup>. Quelle est la conductance de la portion de solution mesurée ?",
+  EQ("$G$ = $k$·$σ$ = 1,000 × 10<sup>−2</sup> × 0,126 ≈ 1,26 × 10<sup>−3</sup> S"), 14],
+
+ /* ===== Leçon V – Dosage par titrage avec suivi pH-métrique ===== */
+ ["Quelles sont les trois caractéristiques de la réaction de titrage d’un dosage par titrage direct ?", "Elle est totale, rapide et univoque.", 17],
+ ["Dans un titrage, comment appelle-t-on le réactif dont on veut connaître la concentration ?", "Le réactif titré.", 17],
+ ["Dans un titrage, comment appelle-t-on le réactif de concentration connue, versé à la burette ?", "Le réactif titrant.", 17],
+ ["La réaction de titrage s’écrit α·titré + β·titrant → produits. Quelle relation traduit l’équivalence entre $n$(titrant)<sub>versés</sub> et $n$(titré)<sub>i</sub> ?",
+  EQ(F("$n$(titrant)<sub>versés</sub>", "β") + " = " + F("$n$(titré)<sub>i</sub>", "α")) + "Les réactifs sont dans les proportions stœchiométriques.", 17],
+ ["Comment repère-t-on l’équivalence dans un dosage par titrage avec suivi colorimétrique ?", "Par un changement de couleur du milieu réactionnel.", 17],
+ ["Comment repère-t-on l’équivalence dans un dosage par titrage avec suivi pH-métrique ?", "Par un saut de pH.", 17],
+ ["Quelles sont les deux méthodes pour repérer le volume équivalent $V$<sub>E</sub> sur une courbe de suivi pH-métrique ?",
+  "Avec la courbe dérivée : $V$<sub>E</sub> est l’abscisse du maximum de d pH / d$V$<sub>titrant</sub> = $f$($V$<sub>titrant</sub>). Ou avec la méthode des tangentes.", 18],
+
+ /* ===== Leçon VI – Dosage par titrage avec suivi conductimétrique ===== */
+ ["Pourquoi ajoute-t-on un grand volume d’eau déionisée dans le bécher lors d’un dosage par titrage avec suivi conductimétrique ?", "Pour pouvoir négliger les variations de volume lors de l’ajout de la solution titrante, et pour travailler dans le domaine de validité de la loi de Kohlrausch.", 19],
+ ["Comment repère-t-on l’équivalence sur la courbe $G$ = $f$($V$<sub>titrant</sub>) d’un titrage avec suivi conductimétrique ?", "Par un changement de pente : $V$<sub>E</sub> est l’abscisse du point d’intersection des deux portions de droite.", 20],
+ ["On dose une solution d’acide chlorhydrique (H<sub>3</sub>O<sup>+</sup> ; Cl<sup>−</sup>) par de la soude (Na<sup>+</sup> ; HO<sup>−</sup>), en négligeant les variations de volume. Données : $λ$(H<sub>3</sub>O<sup>+</sup>) = 35,0 × 10<sup>−3</sup> ; $λ$(HO<sup>−</sup>) = 19,9 × 10<sup>−3</sup> ; $λ$(Na<sup>+</sup>) = 5,01 × 10<sup>−3</sup> ; $λ$(Cl<sup>−</sup>) = 7,63 × 10<sup>−3</sup> S m<sup>2</sup> mol<sup>−1</sup>. Avant l’équivalence, la conductivité augmente-t-elle ou diminue-t-elle ?",
+  "Elle diminue. Les ions H<sub>3</sub>O<sup>+</sup> sont consommés par la réaction de titrage et remplacés par des ions Na<sup>+</sup>, dont la conductivité molaire ionique est bien plus faible ; les ions Cl<sup>−</sup> ne participent pas à la réaction.", 20],
+ ["On dose une solution d’acide chlorhydrique (H<sub>3</sub>O<sup>+</sup> ; Cl<sup>−</sup>) par de la soude (Na<sup>+</sup> ; HO<sup>−</sup>), en négligeant les variations de volume. Données : $λ$(H<sub>3</sub>O<sup>+</sup>) = 35,0 × 10<sup>−3</sup> ; $λ$(HO<sup>−</sup>) = 19,9 × 10<sup>−3</sup> ; $λ$(Na<sup>+</sup>) = 5,01 × 10<sup>−3</sup> ; $λ$(Cl<sup>−</sup>) = 7,63 × 10<sup>−3</sup> S m<sup>2</sup> mol<sup>−1</sup>. Après l’équivalence, la conductivité augmente-t-elle ou diminue-t-elle ?",
+  "Elle augmente. Les ions H<sub>3</sub>O<sup>+</sup> ayant disparu, les ions HO<sup>−</sup> et Na<sup>+</sup> versés s’accumulent dans le bécher.", 20],
+
+ /* ===== Leçon VII – Groupes caractéristiques et familles organiques ===== */
+ ["Un groupe caractéristique fait intervenir des atomes autres que lesquels ?", "Des atomes autres que le carbone et l’hydrogène.", 21],
+ ["Quelle famille organique possède le groupe hydroxyle, et quelle est sa nomenclature simplifiée ?", "Les alcools : alcan-<i>i</i>-ol.", 21],
+ ["Quel groupe caractéristique est commun aux aldéhydes et aux cétones ?", "Le groupe carbonyle.", 21],
+ ["Quelle est la nomenclature simplifiée d’un aldéhyde ?", "Alcanal.", 21],
+ ["Quelle est la nomenclature simplifiée d’une cétone ?", "Alcan-<i>i</i>-one.", 21],
+ ["Quelle famille organique possède le groupe carboxyle, et quelle est sa nomenclature simplifiée ?", "Les acides carboxyliques : acide alcanoïque.", 21],
+
+ /* ===== Leçon VIII – Spectrophotométrie infrarouge ===== */
+ ["Que permet de déterminer la spectroscopie IR dans un échantillon de molécules organiques ?", "Les groupes caractéristiques présents dans l’échantillon analysé.", 23],
+ ["Quelle grandeur porte-t-on en abscisse d’un spectre IR, et dans quel sens est orienté l’axe ?", "Le nombre d’onde $σ$ = " + F("1", "$λ$") + ", en cm<sup>−1</sup>. L’axe est orienté vers la gauche.", 23],
+ ["Quelle grandeur porte-t-on en ordonnée d’un spectre IR ?", "La transmittance, c’est-à-dire la capacité de l’échantillon à se laisser traverser par l’onde incidente.", 23],
+ ["Dans quelle zone d’un spectre IR trouve-t-on les bandes correspondant aux vibrations d’élongation des liaisons C–O, C–H, C–N… ?", "Dans la zone de 4 000 cm<sup>−1</sup> à 1 400 cm<sup>−1</sup>.", 23],
+ ["Comment appelle-t-on la zone de 1 400 cm<sup>−1</sup> à 400 cm<sup>−1</sup> d’un spectre IR, et pourquoi est-elle difficile à analyser ?", "L’empreinte digitale. Elle contient de très nombreuses bandes, relatives notamment aux vibrations de déformation angulaire, et elle est caractéristique de la molécule.", 23],
+ ["Selon quels trois critères étudie-t-on une bande d’absorption d’un spectre IR ?", "La valeur du nombre d’onde, l’intensité de la bande (faible, moyenne, forte) et sa largeur (fine, large).", 24],
+ ["Un flacon contient de l’acide butanoïque ou du butan-1-ol. Son spectre IR présente une bande forte et large entre 3 200 et 3 400 cm<sup>−1</sup>, et aucune bande vers 1 700 cm<sup>−1</sup>. Données : O–H (alcool) 3 200 à 3 400 cm<sup>−1</sup>, bande forte et large ; O–H (acide carboxylique) 2 600 à 3 200 cm<sup>−1</sup>, bande forte et très large ; C=O 1 700 à 1 760 cm<sup>−1</sup>, bande forte et fine. Quelle espèce contient le flacon ?",
+  "Le butan-1-ol : la bande O–H correspond à un alcool, et l’absence de bande C=O exclut l’acide butanoïque.", 25],
+
+ /* ===== Leçon IX – Exprimer une mesure avec son incertitude ===== */
+ ["Comment s’écrit le résultat de la mesure d’une longueur $L$, de valeur retenue <span class='bar'>$L$</span> et d’incertitude-type $u$($L$) ?", EQ("$L$ = ( <span class='bar'>$L$</span> ± $u$($L$) ) unité") + "L’unité, placée après la parenthèse, porte à la fois sur la valeur retenue et sur l’incertitude-type.", 27],
+ ["Quelle valeur retient-on pour une mesure unique ? pour une série de mesures ?", "Mesure unique : la seule valeur mesurée. Série de mesures : leur moyenne.", 27],
+ ["Combien de chiffres significatifs peut avoir l’incertitude-type ?", "Un ou deux, au choix.", 27],
+ ["Qu’est-ce qui impose le nombre de chiffres après la virgule de la valeur retenue ?", "L’incertitude-type : le dernier chiffre de la valeur retenue est au même rang que le dernier chiffre de l’incertitude-type.", 27],
+ ["Corriger l’écriture $L$ = (11 ± 0,3) m.", EQ("$L$ = (11,0 ± 0,3) m"), 27],
+ ["Corriger l’écriture $m$ = (12,347 ± 0,02) g.", EQ("$m$ = (12,35 ± 0,02) g"), 27],
+ ["Corriger l’écriture $t$ = 8,6 ± 0,3 s.", EQ("$t$ = (8,6 ± 0,3) s"), 27],
+ ["Corriger l’écriture $c$ = (1,3426 ± 0,0217) mol L<sup>−1</sup>.", EQ("$c$ = (1,343 ± 0,022) mol L<sup>−1</sup>") + "Ou, avec un seul chiffre significatif pour l’incertitude-type : (1,34 ± 0,02) mol L<sup>−1</sup>.", 27]
+];
+
+// $x$ → variable en italique
+const it = s => s.replace(/\$([^$]+)\$/g, '<i>$1</i>');
+// Espaces insécables avant : ; ? ! » % et après « (hors balises)
+const nb = s => s.replace(/ ([:;?!»%])/g, ' $1').replace(/« /g, '« ');
+const fmt = s => nb(it(s));
+
+let i = 0;
+const $ = id => document.getElementById(id);
+const card = $('card');
+
+let deck = [];
+function shuffle(a) {
+  for (let k = a.length - 1; k > 0; k--) {
+    const j = Math.floor(Math.random() * (k + 1));
+    [a[k], a[j]] = [a[j], a[k]];
+  }
+  return a;
+}
+function show() {
+  card.classList.remove('shown');
+  $('q').innerHTML = fmt(deck[i][0]);
+  $('a').innerHTML = fmt(deck[i][1]) + '<div class="page">Cours Chimie analytique, ' + (typeof deck[i][2] === 'number' ? 'page ' : 'pages ') + deck[i][2] + '</div>';
+  $('count').textContent = (i + 1) + ' / ' + deck.length;
+}
+function go(d) { i = (i + d + deck.length) % deck.length; show(); }
+function reveal() { card.classList.toggle('shown'); }
+
+card.addEventListener('click', reveal);
+$('prev').addEventListener('click', () => go(-1));
+$('next').addEventListener('click', () => go(1));
+document.addEventListener('keydown', e => {
+  if (!deck.length) return;
+  if (e.key === 'ArrowRight') go(1);
+  else if (e.key === 'ArrowLeft') go(-1);
+  else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); reveal(); }
+});
+$('n').max = cards.length;
+$('hint').textContent = 'de 1 à ' + cards.length;
+$('start').addEventListener('submit', e => {
+  e.preventDefault();
+  let n = parseInt($('n').value, 10);
+  if (isNaN(n)) n = 10;
+  n = Math.max(1, Math.min(n, cards.length));
+  deck = shuffle(cards.slice()).slice(0, n);
+  i = 0;
+  $('start').hidden = true;
+  card.hidden = false;
+  $('nav').hidden = false;
+  show();
+});
+</script>
+</body>
+</html>
