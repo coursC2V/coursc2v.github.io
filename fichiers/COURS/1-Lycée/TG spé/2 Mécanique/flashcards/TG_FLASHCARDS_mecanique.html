@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mécanique – Flashcards</title>
+<style>
+  :root { --bg:#000; --fg:#fff; --card:#000; --accent:#9db8ee; --muted:#9aa0ab; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; flex-direction:column; align-items:center;
+         justify-content:center; gap:1.2rem; padding:1.5rem; background:var(--bg); color:var(--fg);
+         font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  h1 { font-size:1.1rem; font-weight:600; margin:0; color:var(--muted); }
+  .card { width:min(720px,100%); min-height:min(400px,62vh); cursor:pointer; background:var(--card);
+          border:1px solid #444; border-radius:14px; padding:1.6rem 1.8rem; display:flex;
+          flex-direction:column; justify-content:center; gap:1.2rem; font-size:1.2rem; line-height:1.6; }
+  #q { color:var(--fg); }
+  #a { display:none; color:#a8a8a8; border-top:1px solid #444; padding-top:1.2rem; }
+  .card.shown #a { display:block; }
+  .nav { display:flex; align-items:center; gap:1rem; }
+  button { font:inherit; padding:.5rem 1.1rem; border:1px solid var(--accent); background:transparent;
+           color:var(--accent); border-radius:8px; cursor:pointer; }
+  button:hover { background:var(--accent); color:var(--bg); }
+  #count { min-width:5rem; text-align:center; color:var(--muted); }
+  .nuc { display:inline-flex; align-items:center; }
+  .nuc .ns { display:inline-flex; flex-direction:column; font-size:.7em; line-height:1.05; margin-right:.1em; text-align:right; }
+  .eq { margin-top:.6rem; }
+  .bar { text-decoration:overline; }
+  .frac { display:inline-block; vertical-align:middle; text-align:center; }
+  .frac > span { display:block; padding:0 .25em; }
+  .frac > span:first-child { border-bottom:1px solid currentColor; }
+  ol, ul { margin:.3rem 0 0; padding-left:1.4rem; }
+  .page { margin-top:.9rem; font-size:.95rem; color:#7d7d7d; }
+  #consigne { margin:0; color:var(--muted); font-size:1.1rem; }
+  [hidden] { display:none !important; }
+  #start { display:flex; flex-direction:column; align-items:center; gap:1.4rem; text-align:center; }
+  #start label { font-size:1.6rem; line-height:1.4; }
+  #start input { font:inherit; font-size:2rem; width:6rem; text-align:center; padding:.4rem;
+                 background:#000; color:var(--fg); border:1px solid #666; border-radius:8px; }
+  #start button { font-size:1.2rem; padding:.7rem 1.8rem; }
+</style>
+</head>
+<body>
+<h1>Mécanique – Terminale spécialité</h1>
+<form id="start" novalidate>
+  <label for="n">Combien de flashcards ?<br><small id="hint" style="color:var(--muted);font-size:1rem"></small></label>
+  <input id="n" type="number" min="1" value="10" inputmode="numeric">
+  <button type="submit">Commencer</button>
+  <p id="consigne">Pour chaque carte, cliquer dessus pour afficher la réponse.</p>
+</form>
+<div class="card" id="card" title="Cliquer pour afficher la réponse" hidden>
+  <div id="q"></div>
+  <div id="a"></div>
+</div>
+<div class="nav" id="nav" hidden>
+  <button id="prev" type="button">←</button>
+  <span id="count"></span>
+  <button id="next" type="button">→</button>
+</div>
+
+<script>
+// Noyau ou particule : A en haut, Z en bas, puis le symbole
+const NUC = (A,Z,X) => '<span class="nuc"><span class="ns"><span>'+A+'</span><span>'+Z+'</span></span>'+X+'</span>';
+// Fraction
+const F = (n,d) => '<span class="frac"><span>'+n+'</span><span>'+d+'</span></span>';
+const EQ = s => '<div class="eq">'+s+'</div>';
+
+const nu  = '<span class="bar">ν</span><sub>e</sub>';
+const eqX = (Ap,Zp) => NUC('$A$','$Z$','X') + ' → ' + NUC(Ap,Zp,'Y');
+
+const V = s => '<span style="display:inline-flex;flex-direction:column;align-items:center;line-height:1;vertical-align:middle"><span style="font-size:.7em;line-height:.9">→</span><span>'+s+'</span></span>';
+const SUM = 'Σ' + V('F') + '<sub>ext</sub>';
+// indices et exposants dans les variables $…$ : _x ou _{xyz}
+const sb = s => s.replace(/\$([^$]+)\$/g, (m,x) => '$' + x.replace(/_\{([^}]*)\}/g,'<sub>$1</sub>').replace(/_([A-Za-z0-9])/g,'<sub>$1</sub>') + '$');
+
+const cards = [
+
+ /* ===== Leçon I – Description du mouvement d’un objet ===== */
+ ["En mécanique, comment appelle-t-on l’objet que l’on étudie ?", "Le système.", 5],
+ ["Par quel élément géométrique remplace-t-on un solide quand on l’étudie comme un système ponctuel, et où le place-t-on ?", "Par un point M, placé en son centre de gravité.", 5],
+ ["Quelle information perd-on sur un solide quand on le modélise par un point ?", "La rotation du système sur lui-même.", 5],
+ ["Quels sont les trois éléments qui définissent un référentiel ?", "<ul><li>un objet qui sert de référence ;</li><li>un repère ($O$, $x$, $y$, $z$) dont le centre et les axes sont fixes par rapport à l’objet de référence ;</li><li>une horloge fixe par rapport à l’objet de référence.</li></ul>", 5],
+ ["D’après le principe de relativité du mouvement de Galilée, dans quel cas un même système peut-il être en mouvement et au repos à la fois ?", "Lorsqu’on le décrit dans deux référentiels différents : le mouvement d’un système dépend du référentiel dans lequel on le décrit.", 6],
+ ["Quel adjectif qualifie la trajectoire d’un système dans un référentiel donné quand cette trajectoire est une droite ?", "Rectiligne.", 6],
+ ["Quel adjectif qualifie la trajectoire d’un système dans un référentiel donné quand cette trajectoire est un cercle ?", "Circulaire.", 6],
+ ["Quel adjectif qualifie la trajectoire d’un système dans un référentiel donné quand cette trajectoire est une courbe quelconque ?", "Curviligne.", 6],
+ ["Comment qualifie-t-on le mouvement d’un système dont la vitesse augmente ?", "Accéléré.", 6],
+ ["Comment qualifie-t-on le mouvement d’un système dont la vitesse est constante ?", "Uniforme.", 6],
+ ["Dans un référentiel donné, un point parcourt la distance $d$ pendant la durée Δ$t$. Quelle est l’expression de sa vitesse moyenne $v$ en fonction de $d$ et de Δ$t$ ?", EQ("$v$ = " + F("$d$", "Δ$t$")), 6],
+
+ /* ===== Leçon II – Cinématique sur une chronophotographie ===== */
+ ["Comment appelle-t-on le vecteur qui relie deux positions successives $M_i$ et $M_{i+1}$ d’un système ponctuel, et comment le note-t-on ?", "Le vecteur déplacement, noté " + V("M<sub>i</sub>M<sub>i+1</sub>") + " ($i$ étant le compteur de position).", 7],
+ ["Quelle est l’expression approchée du vecteur vitesse " + V("$v_i$") + " d’un système au point $M_i$ en fonction du vecteur déplacement " + "M<sub>i</sub>M<sub>i+1</sub>" + " et de Δ$t$ ?", EQ(V("$v_i$") + " = " + F("" + V("M<sub>i</sub>M<sub>i+1</sub>") + "", "Δ$t$")), 7],
+ ["Quelle est la direction du vecteur vitesse d’un système en un point de sa trajectoire ?", "Il est tangent à la trajectoire.", 7],
+ ["Quelle est l’expression approchée du vecteur accélération " + V("$a_i$") + " d’un système au point $M_i$ en fonction de " + V("$v_{i+1}$") + ", " + V("$v_i$") + " et de Δ$t$ ?", EQ(V("$a_i$") + " = " + F(V("$v_{i+1}$") + " − " + V("$v_i$"), "Δ$t$")), 7],
+ ["Dans quel cas dit-on qu’un mouvement est uniformément accéléré, en fonction du vecteur accélération ?", "Si le vecteur accélération est constant tout au long du mouvement.", 7],
+ ["Dans le langage courant, à quelle grandeur le terme « accélération » fait-il référence ?", "À la norme de l’accélération.", 7],
+
+ /* ===== Leçon III – Cinématique en coordonnées cartésiennes ===== */
+ ["Dans un repère ($O$, $x$, $y$, $z$), quelles sont les coordonnées du vecteur position " + V("OM") + "($t$) d’un système ponctuel situé en $M$ à la date $t$ ?", "Les coordonnées de la position $M$ à la date $t$ : $x$($t$), $y$($t$) et $z$($t$).", 9],
+ ["Quelle est l’expression du vecteur vitesse " + V("$v$") + "($t$) d’un système ponctuel en fonction du vecteur position " + V("OM") + "($t$) ?", EQ(V("$v$") + "($t$) = " + F("d" + V("OM") + "($t$)", "d$t$")) + "C’est la dérivée du vecteur position.", 9],
+ ["Quelle est l’expression du vecteur accélération " + V("$a$") + "($t$) d’un système ponctuel en fonction du vecteur vitesse " + V("$v$") + "($t$) ?", EQ(V("$a$") + "($t$) = " + F("d" + V("$v$") + "($t$)", "d$t$")) + "C’est la dérivée du vecteur vitesse.", 9],
+ ["Pourquoi l’accélération d’un mouvement circulaire uniforme est-elle non nulle alors que la norme de la vitesse est constante ?", "Parce que l’accélération est une grandeur vectorielle : le vecteur vitesse change de direction.", 9],
+
+ /* ===== Leçon IV – Cinématique dans le repère de Frenet ===== */
+ ["Dans la base de Frenet, comment est orienté le vecteur unitaire " + V("$u_t$") + " par rapport à la trajectoire ?", "Il est tangent à la trajectoire et dirigé dans le sens du mouvement.", 11],
+ ["Dans la base de Frenet, comment est orienté le vecteur unitaire " + V("$u_n$") + " par rapport à la trajectoire ?", "Il est normal à la trajectoire et dirigé vers le centre de la courbure de la trajectoire.", 11],
+ ["Quelle est l’expression du vecteur vitesse " + V("$v$") + "($t$) dans un mouvement circulaire de rayon $R$, en fonction de $v$($t$) et de " + V("$u_t$") + " ?", EQ(V("$v$") + "($t$) = $v$($t$)·" + V("$u_t$")), 11],
+ ["Quelle est l’expression du vecteur accélération " + V("$a$") + "($t$) dans un mouvement circulaire de rayon $R$, en fonction de $v$($t$), de $R$, de " + V("$u_t$") + " et de " + V("$u_n$") + " ?", EQ(V("$a$") + "($t$) = " + F("d$v$($t$)", "d$t$") + "·" + V("$u_t$") + " + " + F("$v$($t$)<sup>2</sup>", "$R$") + "·" + V("$u_n$")), 11],
+
+ /* ===== Leçon V – La première loi de Newton ===== */
+ ["Quelle est la norme de la force d’interaction gravitationnelle exercée par un corps A de masse $m_A$ sur un corps B de masse $m_B$, séparés de la distance AB, en fonction de $G$, $m_A$, $m_B$ et AB ?", EQ("$F_{A/B}$ = $G$·" + F("$m_A$·$m_B$", "AB<sup>2</sup>")), 13],
+ ["Quelle est la norme du poids " + V("$P$") + " d’un système de masse $m$, en fonction de $m$ et de $g$ ?", EQ("$P$ = $m$·$g$"), 13],
+ ["Quelle est la direction de la poussée d’Archimède, et quel est son sens ?", "La verticale du lieu, vers le haut.", 13],
+ ["Quelle est la norme de la poussée d’Archimède exercée par un fluide, en fonction de la masse volumique $ρ_{fluide}$ du fluide, du volume immergé $V_{immergé}$ et de $g$ ?", EQ("$P_A$ = $ρ_{fluide}$ · $V_{immergé}$ · $g$"), 13],
+ ["Quelle est la norme de la force électrique subie par une particule de charge $q$ dans un champ électrique de valeur $E$, en fonction de |$q$| et de $E$ ?", EQ("$F_e$ = |$q$| · $E$"), 13],
+ ["Quelle est la direction de la réaction normale " + V("$R_N$") + " d’un support (frottements solides négligés), et quel est son sens ?", "Perpendiculaire au support, dirigée du support vers le système.", 13],
+ ["Quelle est la direction de la tension " + V("$T$") + " d’un fil, et quel est son sens ?", "La direction du fil, dirigée du système vers le point d’attache.", 13],
+ ["Quelle est la direction des frottements fluides " + V("$f$") + ", et quel est leur sens ?", "Tangents à la trajectoire, de sens opposé au mouvement.", 13],
+ ["À quelle grandeur la norme des frottements fluides est-elle proportionnelle ?", "À la vitesse ou au carré de la vitesse.", 13],
+
+ /* ===== Leçon V (suite) – Principe d’inertie ===== */
+ ["Quel est l’énoncé du principe d’inertie, sous forme d’équivalence, en fonction de la somme des forces extérieures " + SUM + " et des vecteurs vitesse " + V("$v$") + "($t$) et " + V("$v$") + "(0) ?", "Dans un référentiel galiléen : " + SUM + " = " + V("0") + " ⇔ " + V("$v$") + "($t$) = " + V("$v$") + "(0).", 14],
+ ["Dans un référentiel galiléen, quelle est la valeur de la somme des forces extérieures " + SUM + " appliquées à un système au repos ?", "Le vecteur nul : un système au repos est à l’équilibre.", 14],
+ ["Comment appelle-t-on un référentiel dans lequel le principe d’inertie est vrai ?", "Un référentiel galiléen.", 14],
+ ["À quelle condition sur la durée du mouvement d’un système le référentiel terrestre peut-il être considéré comme galiléen ?", "Si la durée du mouvement est négligeable devant la durée de rotation de la Terre (24&nbsp;h).", 14],
+
+ /* ===== Leçon VI – La deuxième loi de Newton ===== */
+ ["Quelle est l’expression du principe fondamental de la dynamique pour un point matériel de masse constante $m$ dans un référentiel galiléen, en fonction de $m$ et du vecteur accélération " + V("$a$") + "($t$) ?", EQ(SUM + " = $m$·" + V("$a$") + "($t$)"), 15],
+ ["Comment appelle-t-on un corps qui n’est soumis qu’à son poids ?", "Un corps en chute libre.", 15],
+ ["Quelle est l’expression du vecteur accélération " + V("$a$") + "($t$) d’un corps en chute libre en fonction du champ de pesanteur local " + V("$g$") + " ?", EQ(V("$a$") + "($t$) = " + V("$g$")), 15],
+
+ /* ===== Leçon VII – Théorème de l’énergie cinétique ===== */
+ ["Quelle est l’expression du travail $W_{A→B}$(" + V("$F$") + ") d’une force constante " + V("$F$") + " le long d’un trajet rectiligne AB, en fonction de " + V("$F$") + " et du vecteur déplacement " + V("AB") + " ?", EQ("$W_{A→B}$(" + V("$F$") + ") = " + V("$F$") + " · " + V("AB") + "") + "C’est le produit scalaire de la force par le déplacement.", 17],
+ ["Quelle est l’expression du travail $W_{A→B}$(" + V("$F$") + ") d’une force constante " + V("$F$") + " le long d’un trajet rectiligne AB, en fonction de la norme $F$, de la distance AB et de l’angle entre " + V("$F$") + " et " + V("AB") + " ?", EQ("$W_{A→B}$(" + V("$F$") + ") = $F$ · AB · cos(" + V("$F$") + ", " + V("AB") + ")"), 17],
+ ["Comment qualifie-t-on le travail d’une force quand il est positif ?", "Moteur.", 17],
+ ["Comment qualifie-t-on le travail d’une force quand il est négatif ?", "Résistant.", 17],
+ ["Quel est l’effet énergétique d’un travail nul ?", "Aucun : un travail nul n’a pas d’effet énergétique.", 17],
+ ["Quelle est l’expression de l’énergie cinétique $E_C$ d’un objet ponctuel de masse $m$ se déplaçant à la vitesse " + V("$v$") + " dans un référentiel donné, en fonction de $m$ et de ‖" + V("$v$") + "‖ ?", EQ("$E_C$ = " + F("1", "2") + "·$m$·‖" + V("$v$") + "‖<sup>2</sup>"), 18],
+ ["Quel est l’énoncé du théorème de l’énergie cinétique pour un corps ponctuel de masse $m$ constante allant d’un point A à un point B dans un référentiel galiléen, en fonction de $W_{A→B}$(" + V("$F_{ext}$") + ") ?", EQ("Δ<sub>AB</sub>$E_c$ = Σ $W_{A→B}$(" + V("$F_{ext}$") + ")") + "La variation d’énergie cinétique est égale à la somme des travaux des forces extérieures.", 18],
+
+ /* ===== Leçon VIII – Théorème de l’énergie mécanique ===== */
+ ["Quelle est l’expression de l’énergie potentielle de pesanteur $E_{pp}$ d’un corps de masse $m$ situé à l’altitude $z$ (axe $z$ dirigé vers le haut), en fonction de $m$, $g$ et $z$ ?", EQ("$E_{pp}$($z$) = $m$·$g$·$z$"), 19],
+ ["Le poids est-il une force conservative ou non conservative ?", "Une force conservative : on peut lui associer une énergie potentielle (l’énergie potentielle de pesanteur).", 19],
+ ["De quoi dépend le travail d’une force conservative ?", "Il ne dépend pas du chemin suivi, mais uniquement du point de départ et du point d’arrivée.", 19],
+ ["Quelle est la définition de l’énergie mécanique $E_m$ d’un corps ponctuel uniquement soumis au poids, en fonction de $E_c$ et de $E_{pp}$ ?", EQ("$E_m$ = $E_c$ + $E_{pp}$"), 19],
+ ["Quel est l’énoncé du théorème de l’énergie mécanique pour un corps ponctuel de masse $m$ constante allant d’un point A à un point B dans un référentiel galiléen, en fonction des travaux des forces extérieures non conservatives ?", EQ("Δ<sub>AB</sub>$E_m$ = Σ $W_{A→B}$(" + V("F<sub>ext, non conservatives</sub>") + ")") + "La variation d’énergie mécanique est égale à la somme des travaux des forces extérieures non conservatives.", 19],
+
+ /* ===== Leçon IX – Mouvement des satellites et des planètes ===== */
+ ["Comment appelle-t-on aussi le référentiel de Kepler, et comment est-il défini ?", "Le référentiel héliocentrique : il est centré sur le centre de masse du Soleil et ses axes sont dirigés vers trois étoiles « éloignées ».", 21],
+ ["Pour l’étude de quels mouvements le référentiel héliocentrique peut-il être considéré comme galiléen ?", "Pour l’étude des mouvements des planètes et des satellites.", 22],
+ ["Comment appelle-t-on un corps en rotation autour d’un autre corps de masse bien plus importante ?", "Un satellite.", 22],
+ ["Comment s’appelle la durée d’une révolution d’un satellite, et comment la note-t-on ?", "La période de révolution, notée $T$ (en s).", 22],
+ ["Dans quel cas dit-on qu’un satellite a un mouvement circulaire uniforme ?", "Si son centre de masse a une trajectoire en forme de cercle et si la valeur de sa vitesse est constante.", 22],
+ ["Comment appelle-t-on un satellite immobile dans le référentiel terrestre ?", "Un satellite géostationnaire : il apparaît fixe vu d’un observateur terrestre.", 23],
+
+ /* ===== Leçon X – Étude d’un satellite ===== */
+ ["Quelle est la direction des forces d’attraction gravitationnelle entre deux corps ponctuels A et B, et quel est leur sens ?", "La droite (AB) ; les forces sont attractives.", 25],
+ ["Quelle est la norme de la force d’attraction gravitationnelle $F_{A/B}$ entre deux corps ponctuels A et B de masses $m_A$ et $m_B$, séparés de la distance AB, en fonction de $G$, $m_A$, $m_B$ et AB ?", EQ("$F_{A/B}$ = $F_{B/A}$ = $G$·" + F("$m_A$·$m_B$", "AB<sup>2</sup>")) + "Loi de la gravitation universelle (Isaac Newton, 1687).", 25],
+ ["Quelle est l’expression de la force " + V("$F_{A/B}$") + " dans la base de Frenet, en fonction de $G$, $m_A$, $m_B$, AB et " + V("$u_n$") + " ?", EQ(V("$F_{A/B}$") + " = $G$·" + F("$m_A$·$m_B$", "AB<sup>2</sup>") + "·" + V("$u_n$")), 25],
+ ["Dans le cas d’un mouvement circulaire d’une planète, comment est le vecteur accélération (direction et sens) ?", "Il est centripète (dirigé vers le centre de la trajectoire) et radial.", 26],
+ ["Quelle est l’expression de la vitesse $v$ d’un satellite en mouvement circulaire en fonction de $G$, de la masse $M$ de l’astre attracteur et du rayon $R$ de la trajectoire ?", EQ("$v$ = √(" + F("$G$·$M$", "$R$") + ")"), 26],
+ ["Quelle est l’expression de la vitesse $v$ d’un satellite en mouvement circulaire uniforme de période $T$ et de rayon $R$, en fonction de $R$ et de $T$ ?", EQ("$v$ = " + F("2·π·$R$", "$T$")), 26],
+ ["Quelle est la relation entre $T$, $R$, $G$ et la masse $M$ de l’astre attracteur, valable pour tous les satellites d’un même astre, en fonction du rapport $T$<sup>2</sup>/$R$<sup>3</sup> ?", EQ(F("$T$<sup>2</sup>", "$R$<sup>3</sup>") + " = " + F("4·π<sup>2</sup>", "$G$·$M$")), 26],
+
+ /* ===== Leçon XI – Les lois de Kepler ===== */
+ ["Quel est l’énoncé de la première loi de Kepler (loi des orbites) dans le référentiel héliocentrique ?", "La trajectoire du centre d’une planète est une ellipse dont le centre du Soleil est l’un des foyers.", 27],
+ ["Quel est l’énoncé de la deuxième loi de Kepler (loi des aires) ?", "Le rayon qui relie le centre du Soleil à celui de la planète balaie des aires égales pendant des durées égales.", 27],
+ ["Comment appelle-t-on le point de la trajectoire d’une planète le plus proche du Soleil ?", "Le périhélie.", 27],
+ ["Comment appelle-t-on le point de la trajectoire d’une planète le plus éloigné du Soleil ?", "L’aphélie.", 27],
+ ["D’après la loi des aires, en quel point de sa trajectoire, périhélie ou aphélie, une planète a-t-elle la valeur de vitesse la plus grande ?", "Au périhélie : pendant une même durée, l’arc parcouru est plus long près du Soleil.", 27],
+ ["Quel est l’énoncé de la troisième loi de Kepler (loi des périodes) pour une planète de période $T$ et de trajectoire circulaire de rayon $R$, en fonction de la constante $K$ ?", EQ(F("$T$<sup>2</sup>", "$R$<sup>3</sup>") + " = $K$") + "$K$ est une constante qui ne dépend pas de la planète.", 28],
+
+ /* ===== Petits exercices de cours (énoncé et corrigé) ===== */
+ ["On réalise la chronophotographie d’un pélican en vol. Quel est le système étudié, et par quel élément le modélise-t-on ?", "Le système est le pélican ; on le modélise par un point placé en son centre de masse.", "5 et 39"],
+ ["Un pélican en vol, étudié par chronophotographie, est modélisé par un point placé en son centre de masse. Citer des informations perdues lors de cette modélisation.", "Les battements d’ailes, la rotation et la déformation de l’oiseau, ses dimensions.", "5 et 39"],
+ ["Quels sont l’objet de référence, le repère et l’horloge du référentiel terrestre ?", "L’objet de référence est la Terre ; le repère est lié au sol ; l’horloge est fixe par rapport au sol.", "5 et 39"],
+ ["Dans la base de Frenet ($u_t$, $u_n$), quelle est l’expression du vecteur position " + V("OM") + " d’un point $M$ d’une trajectoire circulaire de rayon $R$ et de centre $O$, en fonction de $R$ et de " + V("$u_n$") + " ?", EQ(V("OM") + " = −$R$·" + V("$u_n$")), "11 et 39"],
+ ["Sur une nacelle de manège en mouvement circulaire uniforme dans le référentiel terrestre, on néglige l’action de l’air et l’on modélise l’action des fils par une force unique. Quelles sont les deux forces qui s’exercent sur la nacelle ?", "Le poids " + V("$P$") + " et la force " + V("$T$") + " exercée par les fils.", "14 et 39"],
+ ["Une nacelle de manège est en mouvement circulaire uniforme dans le référentiel terrestre, supposé galiléen. Les forces qui lui sont appliquées se compensent-elles ?", "Non : la somme des forces n’est pas nulle, puisque la direction du vecteur vitesse change.", "14 et 39"],
+ ["Une nacelle de manège est en mouvement circulaire uniforme dans le référentiel terrestre, supposé galiléen. Le référentiel de Frenet, dont l’origine est la nacelle et dont les axes sont portés par " + V("$u_t$") + " et " + V("$u_n$") + ", est-il galiléen ?", "Non : la nacelle y est au repos alors que la somme des forces n’est pas nulle, donc le principe d’inertie n’y est pas vérifié.", "14 et 39"],
+ ["Quelles forces s’exercent sur un avion de ligne en vol, d’après le cours ?", "Le poids " + V("$P$") + " et la force " + V("$F_{air}$") + " exercée par l’air. La poussée des réacteurs n’est pas une force supplémentaire : elle provient de l’éjection des gaz et fait partie de la force de l’air.", "13 et 39"],
+ ["Une voiture descend, moteur coupé, une route rectiligne inclinée du point A au point B. Le travail de son poids sur le trajet AB est-il moteur, résistant ou nul ?", "Moteur : la composante du poids le long de AB est dans le sens du déplacement.", "17 et 39"],
+ ["Une voiture descend, moteur coupé, une route rectiligne inclinée du point A au point B. Le travail de la réaction normale de la route sur le trajet AB est-il moteur, résistant ou nul ?", "Nul : la force est perpendiculaire au déplacement (cos 90° = 0).", "17 et 39"],
+ ["Une voiture descend, moteur coupé, une route rectiligne inclinée du point A au point B. Le travail des frottements sur le trajet AB est-il moteur, résistant ou nul ?", "Résistant : la force est opposée au déplacement (cos 180° = −1).", "17 et 39"],
+ ["Quel est le mouvement de la Terre dans le référentiel héliocentrique ?", "Un mouvement quasi circulaire uniforme, de période 1 an.", "21 et 39"],
+ ["Quels sont l’objet de référence, le repère et l’horloge du référentiel géocentrique ?", "L’objet de référence est la Terre ; le repère est centré sur le centre de masse de la Terre, avec des axes dirigés vers trois étoiles lointaines ; l’horloge est liée à ce repère.", "21 et 39"],
+ ["Quel est le mouvement du Soleil dans le référentiel géocentrique ?", "Un mouvement quasi circulaire uniforme autour de la Terre, de période 1 an.", "21 et 39"],
+ ["Quelle est la nature du mouvement d’un satellite géostationnaire dans le référentiel géocentrique ?", "Circulaire et uniforme.", "23 et 39"],
+ ["Quelle est la seule durée de révolution possible pour un satellite géostationnaire ?", "La période de rotation propre de la Terre, soit 23&nbsp;h 56&nbsp;min (arrondie à 24&nbsp;h dans la leçon).", "23 et 39"],
+ ["Dans quel plan et autour de quel point se trouve la trajectoire d’un satellite géostationnaire ?", "Un cercle centré sur le centre de la Terre, situé dans le plan de l’équateur, donc perpendiculaire à l’axe de rotation de la Terre.", "23 et 39"],
+];
+cards.forEach(c => { c[0] = sb(c[0]); c[1] = sb(c[1]); });
+
+// $x$ → variable en italique
+const it = s => s.replace(/\$([^$]+)\$/g, '<i>$1</i>');
+// Espaces insécables avant : ; ? ! » % et après « (hors balises)
+const nb = s => s.replace(/ ([:;?!»%])/g, ' $1').replace(/« /g, '« ');
+const fmt = s => nb(it(s));
+
+let i = 0;
+const $ = id => document.getElementById(id);
+const card = $('card');
+
+let deck = [];
+function shuffle(a) {
+  for (let k = a.length - 1; k > 0; k--) {
+    const j = Math.floor(Math.random() * (k + 1));
+    [a[k], a[j]] = [a[j], a[k]];
+  }
+  return a;
+}
+function show() {
+  card.classList.remove('shown');
+  $('q').innerHTML = fmt(deck[i][0]);
+  $('a').innerHTML = fmt(deck[i][1]) + '<div class="page">Cours Mécanique, ' + (typeof deck[i][2] === 'number' ? 'page ' : 'pages ') + deck[i][2] + '</div>';
+  $('count').textContent = (i + 1) + ' / ' + deck.length;
+}
+function go(d) { i = (i + d + deck.length) % deck.length; show(); }
+function reveal() { card.classList.toggle('shown'); }
+
+card.addEventListener('click', reveal);
+$('prev').addEventListener('click', () => go(-1));
+$('next').addEventListener('click', () => go(1));
+document.addEventListener('keydown', e => {
+  if (!deck.length) return;
+  if (e.key === 'ArrowRight') go(1);
+  else if (e.key === 'ArrowLeft') go(-1);
+  else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); reveal(); }
+});
+$('n').max = cards.length;
+$('hint').textContent = 'de 1 à ' + cards.length;
+$('start').addEventListener('submit', e => {
+  e.preventDefault();
+  let n = parseInt($('n').value, 10);
+  if (isNaN(n)) n = 10;
+  n = Math.max(1, Math.min(n, cards.length));
+  deck = shuffle(cards.slice()).slice(0, n);
+  i = 0;
+  $('start').hidden = true;
+  card.hidden = false;
+  $('nav').hidden = false;
+  show();
+});
+</script>
+</body>
+</html>
