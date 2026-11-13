@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thermodynamique – Flashcards</title>
+<style>
+  :root { --bg:#000; --fg:#fff; --card:#000; --accent:#9db8ee; --muted:#9aa0ab; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; flex-direction:column; align-items:center;
+         justify-content:center; gap:1.2rem; padding:1.5rem; background:var(--bg); color:var(--fg);
+         font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  h1 { font-size:1.1rem; font-weight:600; margin:0; color:var(--muted); }
+  .card { width:min(720px,100%); min-height:min(400px,62vh); cursor:pointer; background:var(--card);
+          border:1px solid #444; border-radius:14px; padding:1.6rem 1.8rem; display:flex;
+          flex-direction:column; justify-content:center; gap:1.2rem; font-size:1.2rem; line-height:1.6; }
+  #q { color:var(--fg); }
+  #a { display:none; color:#a8a8a8; border-top:1px solid #444; padding-top:1.2rem; }
+  .card.shown #a { display:block; }
+  .nav { display:flex; align-items:center; gap:1rem; }
+  button { font:inherit; padding:.5rem 1.1rem; border:1px solid var(--accent); background:transparent;
+           color:var(--accent); border-radius:8px; cursor:pointer; }
+  button:hover { background:var(--accent); color:var(--bg); }
+  #count { min-width:5rem; text-align:center; color:var(--muted); }
+  .nuc { display:inline-flex; align-items:center; }
+  .nuc .ns { display:inline-flex; flex-direction:column; font-size:.7em; line-height:1.05; margin-right:.1em; text-align:right; }
+  .eq { margin-top:.6rem; }
+  .bar { text-decoration:overline; }
+  .frac { display:inline-block; vertical-align:middle; text-align:center; }
+  .frac > span { display:block; padding:0 .25em; }
+  .frac > span:first-child { border-bottom:1px solid currentColor; }
+  ol, ul { margin:.3rem 0 0; padding-left:1.4rem; }
+  .page { margin-top:.9rem; font-size:.95rem; color:#7d7d7d; }
+  #consigne { margin:0; color:var(--muted); font-size:1.1rem; }
+  [hidden] { display:none !important; }
+  #start { display:flex; flex-direction:column; align-items:center; gap:1.4rem; text-align:center; }
+  #start label { font-size:1.6rem; line-height:1.4; }
+  #start input { font:inherit; font-size:2rem; width:6rem; text-align:center; padding:.4rem;
+                 background:#000; color:var(--fg); border:1px solid #666; border-radius:8px; }
+  #start button { font-size:1.2rem; padding:.7rem 1.8rem; }
+</style>
+</head>
+<body>
+<h1>Thermodynamique – Terminale spécialité</h1>
+<form id="start" novalidate>
+  <label for="n">Combien de flashcards ?<br><small id="hint" style="color:var(--muted);font-size:1rem"></small></label>
+  <input id="n" type="number" min="1" value="10" inputmode="numeric">
+  <button type="submit">Commencer</button>
+  <p id="consigne">Pour chaque carte, cliquer dessus pour afficher la réponse.</p>
+</form>
+<div class="card" id="card" title="Cliquer pour afficher la réponse" hidden>
+  <div id="q"></div>
+  <div id="a"></div>
+</div>
+<div class="nav" id="nav" hidden>
+  <button id="prev" type="button">←</button>
+  <span id="count"></span>
+  <button id="next" type="button">→</button>
+</div>
+
+<script>
+// Noyau ou particule : A en haut, Z en bas, puis le symbole
+const NUC = (A,Z,X) => '<span class="nuc"><span class="ns"><span>'+A+'</span><span>'+Z+'</span></span>'+X+'</span>';
+// Fraction
+const F = (n,d) => '<span class="frac"><span>'+n+'</span><span>'+d+'</span></span>';
+const EQ = s => '<div class="eq">'+s+'</div>';
+
+const nu  = '<span class="bar">ν</span><sub>e</sub>';
+const eqX = (Ap,Zp) => NUC('$A$','$Z$','X') + ' → ' + NUC(Ap,Zp,'Y');
+
+const cards = [
+
+ /* ===== Leçon I – Le modèle du gaz parfait (p. 5-6) ; Leçon II – Le Premier Principe de la thermodynamique (p. 7-9) ; Leçon III – Les transferts thermiques (p. 11-13) ; Leçon IV – Évolution temporelle de la température d’un solide en contact avec un thermostat (p. 15-18) ===== */
+ ["Que mesure, à l’échelle macroscopique, la température d’un gaz ?", "L’énergie cinétique microscopique des molécules qui constituent le gaz.", 5],
+ ["Dans quelle unité et avec quel instrument mesure-t-on la température dans le SI ?", "En kelvin (K), à l’aide d’un thermomètre.", 5],
+ ["À quelle température en kelvin correspond 0 °C ?", "273,15 K.", 5],
+ ["À l’échelle microscopique, quelle est l’origine de la pression d’un gaz sur les parois du récipient qui le contient ?", "Les chocs des molécules du gaz sur les parois du récipient.", 5],
+ ["Donner l’expression de la pression $P$ d’un gaz en fonction de la norme $F$ de la force qu’il applique sur une paroi de surface $S$.", "<div class=\"eq\">$P$ = $F$ / $S$</div>", 5],
+ ["Quelle est l’unité de pression dans le SI, et à quelle unité exprimée avec le newton et le mètre carré est-elle égale ?", "Le pascal (Pa) : 1 Pa = 1 N m<sup>−2</sup>.", 5],
+ ["Avec quel instrument mesure-t-on une pression ?", "Avec un baromètre.", 5],
+ ["Quelle relation lie le bar au pascal ?", "1 bar = 10<sup>5</sup> Pa.", 5],
+ ["Écrire la loi des gaz parfaits en fonction de la pression $P$, du volume $V$, de la quantité de matière $n$, de la constante des gaz parfaits $R$ et de la température $T$ d’un gaz.", "<div class=\"eq\">$P$ · $V$ = $n$ · $R$ · $T$</div>", 6],
+ ["Quelle est la valeur de la constante des gaz parfaits $R$ dans le SI ?", "8,314 J K<sup>−1</sup> mol<sup>−1</sup>.", 6],
+ ["À l’échelle macroscopique, à quelle condition un gaz est-il dit parfait ?", "Si sa pression, sa température et son volume suivent la loi des gaz parfaits $P$ · $V$ = $n$ · $R$ · $T$.", 6],
+ ["À l’échelle microscopique, quelles hypothèses fait-on sur les molécules d’un gaz parfait ?", "Elles sont supposées sans volume et sans interaction à distance entre elles ; leurs vecteurs vitesse sont aléatoires.", 6],
+ ["Dans quelle condition sur la pression un gaz réel se comporte-t-il d’autant plus comme un gaz parfait ?", "Quand sa pression est faible : le modèle des gaz parfaits est un modèle « limite » des gaz réels.", 6],
+ ["Comment définit-on la masse volumique $ρ$ d’un gaz de masse $m$ et de volume $V$ ?", "Comme la masse d’1 m<sup>3</sup> de ce gaz : <div class=\"eq\">$ρ$ = $m$ / $V$</div>", 6],
+ ["Donner l’expression de la masse volumique $ρ$ d’un gaz parfait en fonction de sa pression $P$, de sa masse molaire $M$, de la constante des gaz parfaits $R$ et de sa température $T$.", "<div class=\"eq\">$ρ$ = $P$ · $M$ / ($R$ · $T$)</div>", 6],
+ ["Comment appelle-t-on une portion de l’univers que l’on isole par la pensée du reste de l’Univers ?", "Un système thermodynamique.", 7],
+ ["Comment appelle-t-on le reste de l’Univers par rapport à un système thermodynamique ?", "Le milieu extérieur.", 7],
+ ["Par convention, quel signe attribue-t-on aux transferts d’énergie gagnés par un système thermodynamique, et quel signe à ceux qu’il perd ?", "Les transferts d’énergie gagnés par le système sont comptés positivement, ceux perdus par le système sont comptés négativement.", 7],
+ ["On fait bouillir de l’eau dans une bouilloire. Donner le signe du transfert thermique échangé entre la résistance de la bouilloire et l’eau si le système est l’{eau dans la bouilloire}, puis si le système est la {résistance de la bouilloire}.", "Système {eau dans la bouilloire} : l’eau reçoit de l’énergie de la résistance, $Q$ > 0. Système {résistance de la bouilloire} : la résistance cède de l’énergie à l’eau, $Q$ < 0.", "7 et 29"],
+ ["Donner la définition de la puissance moyenne $P$ d’un transfert thermique $Q$ reçu par un système pendant une durée ∆$t$, en fonction de |$Q$| et ∆$t$.", "<div class=\"eq\">$P$ = |$Q$| / ∆$t$</div>", 7],
+ ["Au cours d’une transformation thermodynamique, comment appelle-t-on l’état d’équilibre de départ du système, et l’état d’équilibre d’arrivée ?", "L’état initial (grandeurs $T$<sub>i</sub>, $P$<sub>i</sub>, $V$<sub>i</sub>, …) et l’état final (grandeurs $T$<sub>f</sub>, $P$<sub>f</sub>, $V$<sub>f</sub>, …).", 7],
+ ["Pendant une transformation thermodynamique, les grandeurs descriptives du système (température, pression, volume…) sont-elles définies ?", "Non : elles ne sont définies que dans les états d’équilibre, initial et final.", 7],
+ ["Quelle est la cause du mouvement des entités microscopiques (molécules, ions, atomes…) d’un système thermodynamique les unes par rapport aux autres ?", "L’agitation thermique.", 8],
+ ["Donner la définition de l’énergie interne $U$ d’un système en fonction des énergies cinétique $E$<sub>c,micro</sub> et potentielle $E$<sub>p,micro</sub> de chaque particule qui le constitue à l’échelle microscopique.", "<div class=\"eq\">$U$ = Σ $E$<sub>c,micro</sub> + Σ $E$<sub>p,micro</sub></div>", 8],
+ ["Pourquoi ne peut-on pas calculer l’énergie interne $U$ d’un système réel à l’aide de sa définition (somme des énergies cinétique et potentielle microscopiques de chaque particule) ?", "Parce qu’un système réel est constitué de tellement de molécules que ce calcul est impossible.", 8],
+ ["De quelle grandeur l’énergie interne $U$ d’un système incompressible (liquide ou solide) ou d’un gaz parfait est-elle une fonction ?", "De la température $T$ du système : $U$ = $U$($T$).", 8],
+ ["Un système {1+2} est composé de deux sous-systèmes {1} et {2}, d’énergies internes $U$<sub>1</sub> et $U$<sub>2</sub>. Donner l’énergie interne $U$<sub>1+2</sub> du système {1+2} en fonction de $U$<sub>1</sub> et $U$<sub>2</sub>.", "<div class=\"eq\">$U$<sub>1+2</sub> = $U$<sub>1</sub> + $U$<sub>2</sub></div>", 8],
+ ["Énoncer le premier principe de la thermodynamique : donner la variation d’énergie interne ∆$U$ d’un système recevant un transfert thermique $Q$ et un travail $W$, en fonction de $Q$ et $W$.", "<div class=\"eq\">∆$U$ = $Q$ + $W$</div>", 9],
+ ["Sous quelle forme s’écrit le premier principe de la thermodynamique pour un système au repos, de variation d’énergie interne ∆$U$ et recevant un transfert thermique $Q$ ?", "<div class=\"eq\">∆$U$ = $Q$</div>", 9],
+ ["Que vaut la variation d’énergie interne ∆$U$ d’un système isolé, c’est-à-dire sans échange de matière ni de transferts énergétiques ?", "∆$U$ = 0.", 9],
+ ["Un corps incompressible (liquide ou solide) de masse $m$ et de capacité thermique massique $c$ passe de la température $T$<sub>i</sub> à la température $T$<sub>f</sub>, avec ∆$T$ = $T$<sub>f</sub> − $T$<sub>i</sub>. Donner sa variation d’énergie interne ∆$U$ en fonction de $m$, $c$ et ∆$T$.", "<div class=\"eq\">∆$U$ = $m$ · $c$ · ∆$T$</div>", 9],
+ ["Comment s’appelle la grandeur $c$ dans la relation ∆$U$ = $m$ · $c$ · ∆$T$ d’un corps incompressible de masse $m$ ?", "La capacité thermique massique.", 9],
+ ["Comment appelle-t-on les échanges d’énergie entre deux corps à températures différentes, autres que les travaux de forces ?", "Les transferts thermiques, notés $Q$.", 11],
+ ["Dans quel sens a lieu un transfert thermique entre deux corps de températures différentes ?", "Du corps « chaud » vers le corps « froid ».", 11],
+ ["Quels sont les trois modes principaux de transfert thermique ?", "La conduction, la convection et le rayonnement.", 11],
+ ["Quel mode de transfert thermique nécessite un contact direct entre deux corps et permet un échange de chaleur par propagation de l’agitation thermique au sein du matériau ?", "La conduction.", 11],
+ ["Quel mode de transfert thermique se produit lorsqu’un fluide, mis en mouvement sous l’effet des variations de masse volumique dues aux différences de température, facilite le transfert thermique avec un solide ou un autre fluide ?", "La convection.", 11],
+ ["Comment parle-t-on du transfert thermique par convection entre un fluide et un solide ou un autre fluide, puisque le contact entre les deux corps est nécessaire ?", "D’un transfert conducto-convectif.", 11],
+ ["Quel mode de transfert thermique repose sur l’émission et l’absorption de lumière (onde électromagnétique) lorsqu’un corps est chauffé ?", "Le rayonnement.", 11],
+ ["Un radiateur soufflant contient une résistance électrique et un ventilateur. Donner les modes de transfert thermique mis en jeu.", "La conduction (de la résistance vers l’air en contact avec elle), la convection (le ventilateur met l’air en mouvement) et le rayonnement (la résistance chaude émet de la lumière).", "11 et 29"],
+ ["Donner l’expression du flux $Φ$ d’un transfert thermique $Q$ qui a lieu pendant une durée ∆$t$, en fonction de $Q$ et ∆$t$.", "<div class=\"eq\">$Φ$ = $Q$ / ∆$t$</div>", 11],
+ ["À quelle grandeur le flux $Φ$ d’un transfert thermique correspond-il ?", "À sa puissance, c’est-à-dire à la valeur du transfert thermique par unité de temps.", 11],
+ ["Quelle est l’unité du flux d’un transfert thermique, et à quelle unité exprimée avec le joule et la seconde est-elle égale ?", "Le watt (W) : 1 W = 1 J s<sup>−1</sup>.", 11],
+ ["Quel est le signe du flux thermique reçu par un système, et quel est celui du flux qu’il perd ?", "Le flux est une grandeur algébrique : positif s’il est reçu par le système, négatif s’il est perdu par le système.", 15],
+ ["Donner la loi de Fourier : en régime permanent, expression de la valeur absolue du flux thermique |$Φ$| à travers une paroi séparant deux enceintes de températures $T$<sub>C</sub> et $T$<sub>F</sub> (avec $T$<sub>C</sub> > $T$<sub>F</sub>), en fonction de la résistance thermique $R$<sub>th</sub> de la paroi, $T$<sub>C</sub> et $T$<sub>F</sub>.", "<div class=\"eq\">|$Φ$| = (1 / $R$<sub>th</sub>) · ($T$<sub>C</sub> − $T$<sub>F</sub>)</div>", 12],
+ ["Comment s’appelle la grandeur $R$<sub>th</sub> dans la loi de Fourier |$Φ$| = (1 / $R$<sub>th</sub>) · ($T$<sub>C</sub> − $T$<sub>F</sub>) ?", "La résistance thermique de la paroi.", 12],
+ ["Donner l’expression de la résistance thermique $R$<sub>th</sub> d’une paroi plane de surface $S$, d’épaisseur $e$ et dans un matériau de conductivité thermique $λ$, en fonction de $λ$, $e$ et $S$.", "<div class=\"eq\">$R$<sub>th</sub> = (1 / $λ$) · ($e$ / $S$)</div>", 12],
+ ["Comment s’appelle la grandeur $λ$ dans l’expression de la résistance thermique $R$<sub>th</sub> = (1 / $λ$) · ($e$ / $S$) d’une paroi plane de surface $S$ et d’épaisseur $e$ ?", "La conductivité thermique du matériau de la paroi.", 12],
+ ["Donner la loi de Stefan : valeur absolue du flux thermique |$Φ$| rayonné par un corps noir de surface $S$ dont la température de surface est $T$<sub>surface</sub>, en fonction de $σ$, $T$<sub>surface</sub> et $S$.", "<div class=\"eq\">|$Φ$| = $σ$ · $T$<sub>surface</sub><sup>4</sup> · $S$</div>", 12],
+ ["Comment appelle-t-on le modèle d’un objet qui absorberait tous les rayonnements qu’on lui enverrait ?", "Un corps noir.", 12],
+ ["Quelle est la valeur de la constante de Stefan-Boltzmann $σ$, avec son unité ?", "$σ$ = 5,67 × 10<sup>−8</sup> W m<sup>−2</sup> K<sup>−4</sup>.", 12],
+ ["Le flux thermique rayonné par un corps noir est proportionnel à quelle puissance de sa température de surface ?", "À la puissance 4 : $T$<sub>surface</sub><sup>4</sup>.", 12],
+ ["Comment appelle-t-on un fluide de température constante $T$<sub>thermostat</sub>, en contact avec un corps de température de surface $T$ ?", "Un thermostat.", 13],
+ ["Donner la loi de Newton : flux $Φ$ du transfert thermique conducto-convectif à travers la surface $S$ d’un corps de température de surface $T$, en contact avec un thermostat de température $T$<sub>thermostat</sub>, en fonction de $h$, $S$, $T$<sub>thermostat</sub> et $T$.", "<div class=\"eq\">$Φ$ = $h$ · $S$ · ($T$<sub>thermostat</sub> − $T$)</div>", 13],
+ ["Comment s’appelle la grandeur $h$ dans la loi de Newton $Φ$ = $h$ · $S$ · ($T$<sub>thermostat</sub> − $T$) ?", "Le coefficient de transfert conducto-convectif.", 13],
+ ["Dans la situation d’un fer à cheval fabriqué par un forgeron, donner le système et le thermostat.", "Le système est le fer à cheval ; le thermostat est l’air ambiant.", "15 et 29"],
+ ["Un corps solide de masse $m$ et de capacité thermique massique $c$ se refroidit au repos, à volume constant, au contact d’un thermostat. Que vaut le travail $W$ des forces extérieures ?", "$W$ = 0 : on suppose que les forces extérieures ne travaillent pas (système au repos et de volume constant).", 15],
+ ["Dans l’étude du refroidissement d’un solide en contact avec un thermostat, quel mode de transfert thermique suppose-t-on seul à l’origine du transfert entre le système et le thermostat ?", "Le mode conducto-convectif (loi de Newton).", 15],
+ ["Dans l’étude du refroidissement d’un solide au contact d’un thermostat, que représentent respectivement ∆$T$ et ∆$t$ ?", "∆$T$ est la variation de température du système pendant la durée ∆$t$ : ne pas confondre ∆$T$ et ∆$t$.", 15],
+ ["Un solide de surface $S$, de masse $m$ et de capacité thermique massique $c$ est plongé dans un thermostat de température $T$<sub>th</sub>, avec un coefficient de transfert conducto-convectif $h$. Donner l’expression de la constante $τ$ de son équation de refroidissement en fonction de $m$, $c$, $h$ et $S$.", "<div class=\"eq\">$τ$ = $m$ · $c$ / ($h$ · $S$)</div>", 16],
+ ["Un solide de température $T$($t$) est en contact avec un thermostat de température $T$<sub>th</sub> ; la constante de temps de son refroidissement est $τ$. Donner l’équation différentielle (E) vérifiée par $T$($t$) en fonction de $T$, $τ$ et $T$<sub>th</sub>.", "<div class=\"eq\">d$T$/d$t$ + (1 / $τ$) · $T$ = $T$<sub>th</sub> / $τ$</div>", 16],
+ ["Quelle est la nature de l’équation différentielle (E) d$T$/d$t$ + (1 / $τ$) · $T$ = $T$<sub>th</sub> / $τ$ vérifiée par la température d’un solide qui se refroidit au contact d’un thermostat ?", "C’est une équation différentielle du premier ordre, à coefficients constants, avec second membre constant.", 16],
+ ["Quelle est l’unité de $τ$ = $m$ · $c$ / ($h$ · $S$) dans le système international, avec $m$ la masse, $c$ la capacité thermique massique, $h$ le coefficient de transfert conducto-convectif et $S$ la surface d’un solide ?", "La seconde : $τ$ est une durée.", "16 et 29"],
+ ["La solution d’une équation différentielle du premier ordre, à coefficients constants, avec second membre, est la somme de deux termes : lesquels ?", "La solution $T$<sub>homogène</sub>($t$) de l’équation homogène (sans second membre) et une solution particulière $T$<sub>particulière</sub> de l’équation avec second membre : $T$($t$) = $T$<sub>homogène</sub>($t$) + $T$<sub>particulière</sub>.", 17],
+ ["Comment appelle-t-on l’équation différentielle obtenue en supprimant le second membre de l’équation (E) d$T$/d$t$ + (1 / $τ$) · $T$ = $T$<sub>th</sub> / $τ$ ?", "L’équation homogène : d$T$/d$t$ + (1 / $τ$) · $T$ = 0.", 17],
+ ["Donner la solution $T$<sub>homogène</sub>($t$) de l’équation homogène d$T$/d$t$ + (1 / $τ$) · $T$ = 0, en fonction de la constante $A$, de $t$ et de $τ$.", "<div class=\"eq\">$T$<sub>homogène</sub>($t$) = $A$ · e<sup>−$t$/$τ$</sup></div>", 17],
+ ["Pour l’équation différentielle (E) d$T$/d$t$ + (1 / $τ$) · $T$ = $T$<sub>th</sub> / $τ$, dont le second membre est constant, quelle forme de solution particulière cherche-t-on, et quelle est sa valeur ?", "Une solution constante : $T$<sub>particulière</sub> = $T$<sub>th</sub>.", 17],
+ ["Un solide à la température $T$<sub>0</sub> à l’instant $t$ = 0 est plongé dans un thermostat de température $T$<sub>th</sub> ; la constante de temps de son refroidissement est $τ$. Donner la solution $T$($t$) de l’équation différentielle (E) en fonction de $T$<sub>th</sub>, $T$<sub>0</sub>, $t$ et $τ$.", "<div class=\"eq\">$T$($t$) = $T$<sub>th</sub> + ($T$<sub>0</sub> − $T$<sub>th</sub>) · e<sup>−$t$/$τ$</sup></div>", 17],
+ ["Quelles sont les trois actions à réaliser pour donner l’allure d’une courbe ?", "1. Représenter les valeurs limites de manière asymptotique ; 2. représenter les conditions initiales (valeurs initiales, coefficient directeur de la tangente à l’origine) ; 3. donner les coordonnées de quelques points caractéristiques.", 18],
+];
+
+// $x$ → variable en italique
+const it = s => s.replace(/\$([^$]+)\$/g, '<i>$1</i>');
+// Espaces insécables avant : ; ? ! » % et après « (hors balises)
+const nb = s => s.replace(/ ([:;?!»%])/g, ' $1').replace(/« /g, '« ');
+const fmt = s => nb(it(s));
+
+let i = 0;
+const $ = id => document.getElementById(id);
+const card = $('card');
+
+let deck = [];
+function shuffle(a) {
+  for (let k = a.length - 1; k > 0; k--) {
+    const j = Math.floor(Math.random() * (k + 1));
+    [a[k], a[j]] = [a[j], a[k]];
+  }
+  return a;
+}
+function show() {
+  card.classList.remove('shown');
+  $('q').innerHTML = fmt(deck[i][0]);
+  $('a').innerHTML = fmt(deck[i][1]) + '<div class="page">Cours Thermodynamique, ' + (typeof deck[i][2] === 'number' ? 'page ' : 'pages ') + deck[i][2] + '</div>';
+  $('count').textContent = (i + 1) + ' / ' + deck.length;
+}
+function go(d) { i = (i + d + deck.length) % deck.length; show(); }
+function reveal() { card.classList.toggle('shown'); }
+
+card.addEventListener('click', reveal);
+$('prev').addEventListener('click', () => go(-1));
+$('next').addEventListener('click', () => go(1));
+document.addEventListener('keydown', e => {
+  if (!deck.length) return;
+  if (e.key === 'ArrowRight') go(1);
+  else if (e.key === 'ArrowLeft') go(-1);
+  else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); reveal(); }
+});
+$('n').max = cards.length;
+$('hint').textContent = 'de 1 à ' + cards.length;
+$('start').addEventListener('submit', e => {
+  e.preventDefault();
+  let n = parseInt($('n').value, 10);
+  if (isNaN(n)) n = 10;
+  n = Math.max(1, Math.min(n, cards.length));
+  deck = shuffle(cards.slice()).slice(0, n);
+  i = 0;
+  $('start').hidden = true;
+  card.hidden = false;
+  $('nav').hidden = false;
+  show();
+});
+</script>
+</body>
+</html>

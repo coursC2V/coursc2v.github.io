@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mécanique des fluides – Flashcards</title>
+<style>
+  :root { --bg:#000; --fg:#fff; --card:#000; --accent:#9db8ee; --muted:#9aa0ab; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; flex-direction:column; align-items:center;
+         justify-content:center; gap:1.2rem; padding:1.5rem; background:var(--bg); color:var(--fg);
+         font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  h1 { font-size:1.1rem; font-weight:600; margin:0; color:var(--muted); }
+  .card { width:min(720px,100%); min-height:min(400px,62vh); cursor:pointer; background:var(--card);
+          border:1px solid #444; border-radius:14px; padding:1.6rem 1.8rem; display:flex;
+          flex-direction:column; justify-content:center; gap:1.2rem; font-size:1.2rem; line-height:1.6; }
+  #q { color:var(--fg); }
+  #a { display:none; color:#a8a8a8; border-top:1px solid #444; padding-top:1.2rem; }
+  .card.shown #a { display:block; }
+  .nav { display:flex; align-items:center; gap:1rem; }
+  button { font:inherit; padding:.5rem 1.1rem; border:1px solid var(--accent); background:transparent;
+           color:var(--accent); border-radius:8px; cursor:pointer; }
+  button:hover { background:var(--accent); color:var(--bg); }
+  #count { min-width:5rem; text-align:center; color:var(--muted); }
+  .nuc { display:inline-flex; align-items:center; }
+  .nuc .ns { display:inline-flex; flex-direction:column; font-size:.7em; line-height:1.05; margin-right:.1em; text-align:right; }
+  .eq { margin-top:.6rem; }
+  .bar { text-decoration:overline; }
+  .frac { display:inline-block; vertical-align:middle; text-align:center; }
+  .frac > span { display:block; padding:0 .25em; }
+  .frac > span:first-child { border-bottom:1px solid currentColor; }
+  ol, ul { margin:.3rem 0 0; padding-left:1.4rem; }
+  .page { margin-top:.9rem; font-size:.95rem; color:#7d7d7d; }
+  #consigne { margin:0; color:var(--muted); font-size:1.1rem; }
+  [hidden] { display:none !important; }
+  #start { display:flex; flex-direction:column; align-items:center; gap:1.4rem; text-align:center; }
+  #start label { font-size:1.6rem; line-height:1.4; }
+  #start input { font:inherit; font-size:2rem; width:6rem; text-align:center; padding:.4rem;
+                 background:#000; color:var(--fg); border:1px solid #666; border-radius:8px; }
+  #start button { font-size:1.2rem; padding:.7rem 1.8rem; }
+</style>
+</head>
+<body>
+<h1>Mécanique des fluides – Terminale spécialité</h1>
+<form id="start" novalidate>
+  <label for="n">Combien de flashcards ?<br><small id="hint" style="color:var(--muted);font-size:1rem"></small></label>
+  <input id="n" type="number" min="1" value="10" inputmode="numeric">
+  <button type="submit">Commencer</button>
+  <p id="consigne">Pour chaque carte, cliquer dessus pour afficher la réponse.</p>
+</form>
+<div class="card" id="card" title="Cliquer pour afficher la réponse" hidden>
+  <div id="q"></div>
+  <div id="a"></div>
+</div>
+<div class="nav" id="nav" hidden>
+  <button id="prev" type="button">←</button>
+  <span id="count"></span>
+  <button id="next" type="button">→</button>
+</div>
+
+<script>
+// Noyau ou particule : A en haut, Z en bas, puis le symbole
+const NUC = (A,Z,X) => '<span class="nuc"><span class="ns"><span>'+A+'</span><span>'+Z+'</span></span>'+X+'</span>';
+// Fraction
+const F = (n,d) => '<span class="frac"><span>'+n+'</span><span>'+d+'</span></span>';
+const V = s => '<span style="display:inline-flex;flex-direction:column;align-items:center;line-height:1;vertical-align:middle"><span style="font-size:.7em;line-height:.9">→</span><span>'+s+'</span></span>';
+const EQ = s => '<div class="eq">'+s+'</div>';
+
+const nu  = '<span class="bar">ν</span><sub>e</sub>';
+const eqX = (Ap,Zp) => NUC('$A$','$Z$','X') + ' → ' + NUC(Ap,Zp,'Y');
+
+const cards = [
+
+ /* ===== Leçon I – Statique des fluides incompressibles (p. 5-6) ; Leçon II – La poussée d’Archimède (p. 7-8) ; Leçon III – Conservation du débit en écoulement permanent (p. 9-11) ; Leçon IV – Relation de Bernoulli (p. 13-14) ===== */
+ ["Comment définit-on un fluide incompressible ?", "Un fluide incompressible est un fluide dont la masse volumique reste constante, quel que soit le changement de pression ou de température auquel il est soumis.", 5],
+ ["On enferme de l’air dans une seringue et on bouche la sortie : on peut facilement comprimer le gaz, jusqu’à un certain point. Un gaz est-il un fluide incompressible ? Justifier.", "Non. L’air enfermé se comprime : son volume diminue, donc sa masse volumique augmente.", "5 et 25"],
+ ["Quelle est l’unité de pression dans le SI, et quelle unité exprimée avec le newton et le mètre carré lui est équivalente ?", "Le pascal (Pa), équivalent au newton par mètre carré (N m<sup>−2</sup>).", 5],
+ ["À quelle grandeur correspond la pression au sein d’un fluide ?", "À la valeur de la force surfacique au sein du fluide.", 5],
+ ["Donner l’expression de la pression $P$ au sein d’un fluide en fonction de la norme $F$ de la force pressante et de la surface $S$ sur laquelle elle s’exerce.", "<div class=\"eq\">$P$ = " + F("$F$", "$S$") + "</div>", 5],
+ ["Dans la relation $P$ = $F$/$S$ qui définit la pression au sein d’un fluide, quelle action la force pressante de norme $F$ modélise-t-elle ?", "L’action du fluide sur une surface plongée dans le fluide.", 5],
+ ["Dans l’eau, de combien la pression augmente-t-elle tous les 10 m de profondeur ?", "De 1 bar.", "5 et 25"],
+ ["Donner la relation fondamentale de la statique des fluides incompressibles : expression de la différence de pression ∆$P$ = $P$<sub>B</sub> − $P$<sub>A</sub> entre deux points A et B d’un fluide incompressible au repos (A au-dessus de B), de masse volumique $ρ$<sub>fluide</sub>, en fonction de $ρ$<sub>fluide</sub>, de $g$, et des hauteurs $h$<sub>A</sub> et $h$<sub>B</sub> des deux points.", "<div class=\"eq\">∆$P$ = $ρ$<sub>fluide</sub> · $g$ · ($h$<sub>A</sub> − $h$<sub>B</sub>)</div>", 6],
+ ["À quelle grandeur la différence de pression ∆$P$ entre deux points A et B d’un fluide incompressible au repos, placé dans un champ de pesanteur uniforme, est-elle proportionnelle ?", "À la différence $h$<sub>A</sub> − $h$<sub>B</sub> entre les hauteurs des deux points.", 6],
+ ["Pour quels fluides la relation ∆$P$ = $ρ$<sub>fluide</sub> · $g$ · ($h$<sub>A</sub> − $h$<sub>B</sub>) est-elle valable ?", "Uniquement pour les fluides incompressibles (au repos).", 6],
+ ["Deux points A et B sont placés dans un fluide incompressible au repos, A au-dessus de B. Lequel de ces deux points est à la pression la plus élevée ?", "Le point B (le plus bas) : ∆$P$ = $P$<sub>B</sub> − $P$<sub>A</sub> = $ρ$<sub>fluide</sub> · $g$ · ($h$<sub>A</sub> − $h$<sub>B</sub>) est positive.", 6],
+ ["Une pression est donnée en hPa. Quelle égalité permet de la convertir en Pa pour utiliser la relation fondamentale de la statique des fluides dans les unités du SI ?", "1 hPa = 10<sup>2</sup> Pa.", 6],
+
+ ["Que subit tout corps plongé dans un fluide au repos ? Donner la direction et le sens de cette force, et préciser à quoi elle est opposée (théorème d’Archimède).", "Une force verticale, dirigée de bas en haut, opposée au poids du volume de fluide déplacé par le corps : la poussée d’Archimède.", 7],
+ ["Donner l’expression vectorielle de la poussée d’Archimède en fonction de la masse volumique $ρ$<sub>fluide</sub> du fluide, du volume immergé $V$<sub>immergé</sub> et du champ de pesanteur " + V("$g$") + ".", "<div class=\"eq\">" + V("Π") + "<sub>A</sub> = −$ρ$<sub>fluide</sub> · $V$<sub>immergé</sub> · " + V("$g$") + "</div>", 7],
+ ["Dans l’expression de la poussée d’Archimède, que représente $V$<sub>immergé</sub> ?", "Le volume déplacé de liquide, c’est-à-dire le volume du corps étudié qui est plongé dans le fluide.", 7],
+ ["Dans l’expression de la poussée d’Archimède, que représente $ρ$<sub>fluide</sub> ?", "La masse volumique du fluide dans lequel est plongé le corps étudié.", 7],
+ ["Quelle est l’origine de la poussée d’Archimède ?", "La résultante des forces de pression qui s’exercent sur le corps de la part du fluide.", 7],
+ ["La poussée d’Archimède s’exerce-t-elle uniquement dans les liquides ?", "Non : elle est valable quel que soit le fluide (compressible ou non), donc aussi bien dans les liquides que dans les gaz.", 7],
+ ["Citer deux phénomènes expliqués par la poussée d’Archimède.", "Le vol des montgolfières et la flottaison des bateaux.", 7],
+ ["Un glaçon de masse volumique $ρ$<sub>g</sub> = 917 kg m<sup>−3</sup> flotte sur de l’eau de masse volumique $ρ$<sub>e</sub> = 1 000 kg m<sup>−3</sup>. Pourquoi flotte-t-il ?", "Sa masse volumique est inférieure à celle de l’eau : la poussée d’Archimède exercée par l’eau sur le glaçon complètement immergé serait supérieure à son poids, donc le glaçon remonte et ne reste immergé que partiellement.", "8 et 25"],
+ ["Un glaçon flotte sur l’eau, l’ensemble étant au repos dans le référentiel terrestre. Quelle relation vectorielle lie la poussée d’Archimède " + V("Π") + "<sub>A</sub> exercée par l’eau sur le glaçon et le poids " + V("$P$") + " du glaçon ?", "<div class=\"eq\">" + V("Π") + "<sub>A</sub> = −" + V("$P$") + "</div>(à l’équilibre, " + V("Π") + "<sub>A</sub> + " + V("$P$") + " = " + V("0") + ").", "8 et 25"],
+ ["Un glaçon de masse volumique $ρ$<sub>g</sub> et de volume total $V$<sub>g</sub> flotte à l’équilibre sur de l’eau de masse volumique $ρ$<sub>e</sub>. Donner le volume immergé $V$<sub>i</sub> du glaçon en fonction de $ρ$<sub>g</sub>, $ρ$<sub>e</sub> et $V$<sub>g</sub>.", "<div class=\"eq\">$V$<sub>i</sub> = " + F("$ρ$<sub>g</sub>", "$ρ$<sub>e</sub>") + " · $V$<sub>g</sub></div>", "8 et 25"],
+ ["Un glaçon de masse volumique $ρ$<sub>g</sub> a la forme d’un cube dont l’un des côtés est horizontal ; il flotte à l’équilibre sur de l’eau de masse volumique $ρ$<sub>e</sub>. Donner la proportion de la hauteur du glaçon qui est immergée, en fonction de $ρ$<sub>g</sub> et $ρ$<sub>e</sub>.", "<div class=\"eq\">" + F("$h$<sub>i</sub>", "$h$") + " = " + F("$V$<sub>i</sub>", "$V$<sub>g</sub>") + " = " + F("$ρ$<sub>g</sub>", "$ρ$<sub>e</sub>") + "</div>($h$<sub>i</sub> : hauteur immergée, $h$ : hauteur du cube).", "8 et 25"],
+
+ ["Comment appelle-t-on la particule de volume d$V$ infiniment petit, mais contenant un nombre important de particules, qui sert à modéliser un fluide en mécanique des fluides ?", "Une particule fluide.", 9],
+ ["À quelle échelle se situe la particule fluide ?", "À l’échelle mésoscopique, plus grande que l’échelle microscopique et plus petite que l’échelle macroscopique.", 9],
+ ["Comment s’appelle la trajectoire d’une particule fluide au sein d’un fluide ?", "Une ligne de courant.", 9],
+ ["Comment s’appelle la surface qui s’appuie sur plusieurs lignes de courant ?", "Un tube de courant.", 9],
+ ["À quel objet de la mécanique des fluides assimile-t-on une canalisation ?", "À un tube de courant.", 9],
+ ["Que peut-on dire du vecteur vitesse d’une particule fluide par rapport à la ligne de courant sur laquelle elle se trouve ?", "Les vitesses des particules fluides sont tangentes aux lignes de courant.", 9],
+ ["Que signifie, pour un écoulement dans une canalisation, l’expression « sans perte de charge » ?", "Qu’il n’y a pas de perte énergétique due à des frottements du fluide sur les parois.", 10],
+ ["Dans un écoulement incompressible, que peut-on dire de la masse volumique des particules fluides pendant l’écoulement, même si elles se déforment ?", "Elle reste constante.", 10],
+ ["Dans une canalisation de surface $S$, sans perte de charge, que peut-on dire de la vitesse des particules fluides à la traversée de $S$ ?", "Elles ont toutes la même vitesse à la traversée de $S$.", 10],
+ ["Donner la définition du débit volumique $D$($t$) à l’instant $t$ en fonction du volume d$V$ de fluide passant pendant la durée d$t$ à travers une surface $S$ perpendiculaire à l’axe de la canalisation.", "<div class=\"eq\">$D$($t$) = " + F("d$V$", "d$t$") + "</div>", 10],
+ ["Quelle est l’unité du débit volumique dans le SI ?", "Le mètre cube par seconde (m<sup>3</sup> s<sup>−1</sup>).", 10],
+ ["Donner l’expression du débit volumique $D$($t$) en fonction de la vitesse d’écoulement $v$($t$) des particules fluides et de la surface $S$ perpendiculaire à la canalisation.", "<div class=\"eq\">$D$($t$) = $v$($t$) · $S$</div>", 10],
+ ["Dans le cas d’un écoulement permanent, le débit volumique $D$($t$) = $v$($t$) · $S$ varie-t-il au cours du temps ?", "Non : en écoulement permanent, $v$ et $S$ ne dépendent pas du temps, donc $D$ est constant.", "10 et 25"],
+ ["Que peut-on dire du débit volumique d’un fluide en écoulement permanent ?", "Il est constant : $D$($t$) = $D$ (conservation du débit volumique).", 11],
+ ["Que deviennent les particules fluides lorsque le diamètre d’une canalisation est réduit ?", "Elles accélèrent.", 11],
+ ["Un fluide incompressible en écoulement permanent passe, dans une canalisation, d’un diamètre $d$<sub>1</sub> à un diamètre $d$<sub>2</sub> < $d$<sub>1</sub>. Comment varie la vitesse d’écoulement ?", "Elle augmente : $v$<sub>2</sub> > $v$<sub>1</sub> dans la partie rétrécie (conservation du débit, $D$ = $v$<sub>1</sub> · $S$<sub>1</sub> = $v$<sub>2</sub> · $S$<sub>2</sub>).", "11 et 25"],
+ ["Un fluide incompressible en écoulement permanent passe, dans une canalisation, d’un diamètre $d$<sub>1</sub> (vitesse $v$<sub>1</sub>) à un diamètre $d$<sub>2</sub> (vitesse $v$<sub>2</sub>). La surface d’une section de diamètre $d$ vaut $S$ = π$d$<sup>2</sup>/4. Donner $v$<sub>2</sub> en fonction de $v$<sub>1</sub>, $d$<sub>1</sub> et $d$<sub>2</sub>.", "<div class=\"eq\">$v$<sub>2</sub> = $v$<sub>1</sub> · " + F("$d$<sub>1</sub><sup>2</sup>", "$d$<sub>2</sub><sup>2</sup>") + "</div>", "11 et 25"],
+
+ ["La relation de Bernoulli est la traduction de la conservation de quelle grandeur, pour une particule fluide le long d’une ligne de courant ?", "De l’énergie mécanique de la particule fluide.", 13],
+ ["Quelle hypothèse sur les forces faut-il faire pour que la relation de Bernoulli traduise la conservation de l’énergie mécanique d’une particule fluide ?", "L’absence de forces non conservatives.", 13],
+ ["Pour quel type de fluide et d’écoulement, et le long de quelle courbe, la relation de Bernoulli est-elle valable ?", "Pour un fluide incompressible et sans viscosité, en écoulement permanent, le long d’une ligne de courant.", 13],
+ ["Donner la relation de Bernoulli, valable le long d’une ligne de courant, en fonction de la masse volumique $ρ$ du fluide, de la vitesse $v$ de la particule fluide, de la norme $g$ du champ de pesanteur, de la hauteur $h$ et de la pression $p$ du fluide.", "<div class=\"eq\">$ρ$ · " + F("$v$<sup>2</sup>", "2") + " + $ρ$ · $g$ · $h$ + $p$ = constante</div>", 13],
+ ["Dans la relation de Bernoulli $ρ$ · $v$<sup>2</sup>/2 + $ρ$ · $g$ · $h$ + $p$ = constante, que représente $p$ ?", "La pression du fluide.", 13],
+ ["Dans la relation de Bernoulli $ρ$ · $v$<sup>2</sup>/2 + $ρ$ · $g$ · $h$ + $p$ = constante, que représente $v$ ?", "La vitesse de la particule fluide considérée.", 13],
+ ["Dans la relation de Bernoulli $ρ$ · $v$<sup>2</sup>/2 + $ρ$ · $g$ · $h$ + $p$ = constante, que représente $g$ ?", "La norme du champ de pesanteur.", 13],
+ ["Un fluide incompressible, sans viscosité, en écoulement permanent, arrive dans une conduite horizontale dont le diamètre diminue. Comment évolue la pression dans la partie rétrécie de la conduite ?", "Elle diminue : la conduite étant horizontale, $h$ est constant le long de la ligne de courant, donc $p$ + $ρ$ · $v$<sup>2</sup>/2 = constante ; la vitesse $v$ augmente dans la partie rétrécie (conservation du débit), donc $p$ diminue.", "13 et 25"],
+ ["Comment appelle-t-on le phénomène de diminution de la pression dans une conduite lorsque la section diminue ?", "L’effet Venturi.", 14],
+ ["Citer une application de l’effet Venturi en chimie.", "La trompe à eau, utilisée par exemple dans le montage de filtration sur Büchner.", 14],
+];
+
+// $x$ → variable en italique
+const it = s => s.replace(/\$([^$]+)\$/g, '<i>$1</i>');
+// Espaces insécables avant : ; ? ! » % et après « (hors balises)
+const nb = s => s.replace(/ ([:;?!»%])/g, ' $1').replace(/« /g, '« ');
+const fmt = s => nb(it(s));
+
+let i = 0;
+const $ = id => document.getElementById(id);
+const card = $('card');
+
+let deck = [];
+function shuffle(a) {
+  for (let k = a.length - 1; k > 0; k--) {
+    const j = Math.floor(Math.random() * (k + 1));
+    [a[k], a[j]] = [a[j], a[k]];
+  }
+  return a;
+}
+function show() {
+  card.classList.remove('shown');
+  $('q').innerHTML = fmt(deck[i][0]);
+  $('a').innerHTML = fmt(deck[i][1]) + '<div class="page">Cours Mécanique des fluides, ' + (typeof deck[i][2] === 'number' ? 'page ' : 'pages ') + deck[i][2] + '</div>';
+  $('count').textContent = (i + 1) + ' / ' + deck.length;
+}
+function go(d) { i = (i + d + deck.length) % deck.length; show(); }
+function reveal() { card.classList.toggle('shown'); }
+
+card.addEventListener('click', reveal);
+$('prev').addEventListener('click', () => go(-1));
+$('next').addEventListener('click', () => go(1));
+document.addEventListener('keydown', e => {
+  if (!deck.length) return;
+  if (e.key === 'ArrowRight') go(1);
+  else if (e.key === 'ArrowLeft') go(-1);
+  else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); reveal(); }
+});
+$('n').max = cards.length;
+$('hint').textContent = 'de 1 à ' + cards.length;
+$('start').addEventListener('submit', e => {
+  e.preventDefault();
+  let n = parseInt($('n').value, 10);
+  if (isNaN(n)) n = 10;
+  n = Math.max(1, Math.min(n, cards.length));
+  deck = shuffle(cards.slice()).slice(0, n);
+  i = 0;
+  $('start').hidden = true;
+  card.hidden = false;
+  $('nav').hidden = false;
+  show();
+});
+</script>
+</body>
+</html>

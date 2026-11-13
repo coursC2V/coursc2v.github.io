@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Électricité – Flashcards</title>
+<style>
+  :root { --bg:#000; --fg:#fff; --card:#000; --accent:#9db8ee; --muted:#9aa0ab; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; flex-direction:column; align-items:center;
+         justify-content:center; gap:1.2rem; padding:1.5rem; background:var(--bg); color:var(--fg);
+         font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  h1 { font-size:1.1rem; font-weight:600; margin:0; color:var(--muted); }
+  .card { width:min(720px,100%); min-height:min(400px,62vh); cursor:pointer; background:var(--card);
+          border:1px solid #444; border-radius:14px; padding:1.6rem 1.8rem; display:flex;
+          flex-direction:column; justify-content:center; gap:1.2rem; font-size:1.2rem; line-height:1.6; }
+  #q { color:var(--fg); }
+  #a { display:none; color:#a8a8a8; border-top:1px solid #444; padding-top:1.2rem; }
+  .card.shown #a { display:block; }
+  .nav { display:flex; align-items:center; gap:1rem; }
+  button { font:inherit; padding:.5rem 1.1rem; border:1px solid var(--accent); background:transparent;
+           color:var(--accent); border-radius:8px; cursor:pointer; }
+  button:hover { background:var(--accent); color:var(--bg); }
+  #count { min-width:5rem; text-align:center; color:var(--muted); }
+  .nuc { display:inline-flex; align-items:center; }
+  .nuc .ns { display:inline-flex; flex-direction:column; font-size:.7em; line-height:1.05; margin-right:.1em; text-align:right; }
+  .eq { margin-top:.6rem; }
+  .bar { text-decoration:overline; }
+  .frac { display:inline-block; vertical-align:middle; text-align:center; }
+  .frac > span { display:block; padding:0 .25em; }
+  .frac > span:first-child { border-bottom:1px solid currentColor; }
+  ol, ul { margin:.3rem 0 0; padding-left:1.4rem; }
+  .page { margin-top:.9rem; font-size:.95rem; color:#7d7d7d; }
+  #consigne { margin:0; color:var(--muted); font-size:1.1rem; }
+  [hidden] { display:none !important; }
+  #start { display:flex; flex-direction:column; align-items:center; gap:1.4rem; text-align:center; }
+  #start label { font-size:1.6rem; line-height:1.4; }
+  #start input { font:inherit; font-size:2rem; width:6rem; text-align:center; padding:.4rem;
+                 background:#000; color:var(--fg); border:1px solid #666; border-radius:8px; }
+  #start button { font-size:1.2rem; padding:.7rem 1.8rem; }
+</style>
+</head>
+<body>
+<h1>Électricité – Terminale spécialité</h1>
+<form id="start" novalidate>
+  <label for="n">Combien de flashcards ?<br><small id="hint" style="color:var(--muted);font-size:1rem"></small></label>
+  <input id="n" type="number" min="1" value="10" inputmode="numeric">
+  <button type="submit">Commencer</button>
+  <p id="consigne">Pour chaque carte, cliquer dessus pour afficher la réponse.</p>
+</form>
+<div class="card" id="card" title="Cliquer pour afficher la réponse" hidden>
+  <div id="q"></div>
+  <div id="a"></div>
+</div>
+<div class="nav" id="nav" hidden>
+  <button id="prev" type="button">←</button>
+  <span id="count"></span>
+  <button id="next" type="button">→</button>
+</div>
+
+<script>
+// Noyau ou particule : A en haut, Z en bas, puis le symbole
+const NUC = (A,Z,X) => '<span class="nuc"><span class="ns"><span>'+A+'</span><span>'+Z+'</span></span>'+X+'</span>';
+// Fraction
+const F = (n,d) => '<span class="frac"><span>'+n+'</span><span>'+d+'</span></span>';
+const EQ = s => '<div class="eq">'+s+'</div>';
+
+const nu  = '<span class="bar">ν</span><sub>e</sub>';
+const eqX = (Ap,Zp) => NUC('$A$','$Z$','X') + ' → ' + NUC(Ap,Zp,'Y');
+
+const cards = [
+
+ /* ===== Leçon I – Généralités (p. 5-8) ; Leçon II – Le modèle du condensateur (p. 9-10) ; Leçon III – Équation différentielle du premier ordre avec second membre (p. 11) ; Leçon IV – Le modèle du circuit RC série (p. 13-15) ===== */
+ ["Comment définit-on la tension électrique entre deux points d’un circuit ?", "La différence d’énergie potentielle électrique par unité de charge entre les deux points.", 5],
+ ["Comment appelle-t-on l’énergie potentielle électrique par unité de charge électrique en un point A du circuit, notée <i>V</i><sub>A</sub> ?", "Le potentiel électrique du point A.", 5],
+ ["Donner la tension <i>U</i><sub>AB</sub> entre les points A et B en fonction des potentiels <i>V</i><sub>A</sub> et <i>V</i><sub>B</sub>.", "<div class=\"eq\"><i>U</i><sub>AB</sub> = <i>V</i><sub>A</sub> − <i>V</i><sub>B</sub></div>", 5],
+ ["Comment représente-t-on sur un schéma la tension <i>U</i><sub>AB</sub> entre les points A et B ?", "Par une flèche parallèle au fil (AB) : A est du côté de la pointe de la flèche, B au départ de la flèche.", 5],
+ ["Dans quel sens doit être dirigée la flèche d’une tension pour que cette tension soit positive ?", "Dans le sens des potentiels croissants.", 5],
+ ["Avec quel appareil et sur quel réglage mesure-t-on une tension électrique ?", "Avec un multimètre réglé en voltmètre.", 5],
+ ["Pour mesurer la tension <i>U</i><sub>AB</sub> avec un multimètre réglé en voltmètre, à quels points du circuit relie-t-on la borne V et la borne COM ?", "La borne V est reliée au point A, la borne COM au point B.", 5],
+ ["Quel calibre choisit-on sur le voltmètre pour mesurer une tension ?", "Le calibre juste supérieur à la mesure.", 5],
+ ["Énoncer la loi des mailles.", "Sur chaque maille fermée, la somme algébrique des tensions est nulle.", 5],
+ ["Un générateur de tension <i>U</i><sub>G</sub> alimente deux résistors en série, de tensions <i>U</i><sub>R1</sub> et <i>U</i><sub>R2</sub> à leurs bornes (flèches de tension du schéma du cours). Écrire la loi des mailles en exprimant <i>U</i><sub>G</sub> en fonction de <i>U</i><sub>R1</sub> et <i>U</i><sub>R2</sub>.", "<div class=\"eq\"><i>U</i><sub>G</sub> = <i>U</i><sub>R1</sub> + <i>U</i><sub>R2</sub></div>", 5],
+ ["À quoi correspond l’intensité du courant électrique qui circule dans un fil ?", "Au débit de charges électriques qui circulent dans le fil.", 5],
+ ["Donner l’intensité <i>i</i>(<i>t</i>) qui circule à l’instant <i>t</i> en fonction de la charge élémentaire d<i>q</i> qui circule pendant la durée d<i>t</i>.", "<div class=\"eq\"><i>i</i>(<i>t</i>) = <span class=\"frac\"><span>d<i>q</i></span><span>d<i>t</i></span></span></div>", 5],
+ ["Dans quel sens représente-t-on l’intensité sur un fil pour qu’elle soit positive ?", "Dans le sens des potentiels décroissants (du + vers le − du générateur).", 5],
+ ["Énoncer la loi des nœuds.", "En chaque nœud d’un réseau, la somme algébrique des intensités est nulle : Σ<i>I</i><sub>k</sub> = 0.", 6],
+ ["Dans la loi des nœuds, quel signe attribue-t-on à une intensité qui arrive sur le nœud et à une intensité qui en part ?", "I > 0 quand l’intensité arrive sur le nœud, I < 0 quand elle en part.", 6],
+ ["Comparer la somme des intensités qui arrivent sur un nœud et la somme des intensités qui en partent.", "Elles sont égales.", 6],
+ ["Les intensités <i>I</i><sub>1</sub> et <i>I</i><sub>2</sub> arrivent sur un nœud, les intensités <i>I</i><sub>3</sub> et <i>I</i><sub>4</sub> en partent. Écrire la loi des nœuds.", "<div class=\"eq\"><i>I</i><sub>1</sub> + <i>I</i><sub>2</sub> = <i>I</i><sub>3</sub> + <i>I</i><sub>4</sub></div>", 6],
+ ["À quelle condition la tension entre les bornes d’un générateur est-elle positive ?", "Quand les sens conventionnels des flèches de tension et d’intensité sont dans le même sens.", 7],
+ ["À quelle condition la tension entre les bornes d’un récepteur est-elle positive ?", "Quand les sens conventionnels des flèches de tension et d’intensité sont dans des sens contraires.", 7],
+ ["Donner la loi d’Ohm pour un conducteur ohmique de résistance <i>R</i>, de tension <i>U</i> entre ses bornes et traversé par l’intensité <i>I</i>, en exprimant <i>U</i> en fonction de <i>R</i> et <i>I</i>.", "<div class=\"eq\"><i>U</i> = <i>R</i> · <i>I</i></div>", 7],
+ ["Quel type de relation la loi d’Ohm établit-elle entre la tension entre les bornes d’un dipôle et l’intensité qui le traverse ?", "Une relation de proportionnalité.", 7],
+ ["Dans la loi d’Ohm <i>U</i> = <i>R</i> · <i>I</i>, comment appelle-t-on <i>R</i> et dans quelle unité s’exprime-t-elle ?", "La résistance du dipôle considéré, mesurée en ohm (symbole Ω).", 7],
+ ["Comment appelle-t-on les dipôles qui suivent la loi d’Ohm ?", "Les conducteurs ohmiques ; les résistors sont des conducteurs ohmiques.", 7],
+ ["Citer deux exemples de dipôles qui ne suivent pas la loi d’Ohm.", "Les lampes et les moteurs.", 7],
+ ["Un générateur de tension <i>U</i><sub>G</sub> alimente en série deux résistors de résistances <i>R</i><sub>1</sub> et <i>R</i><sub>2</sub>, traversés par l’intensité <i>I</i> ; les tensions à leurs bornes sont <i>U</i><sub>R1</sub> et <i>U</i><sub>R2</sub>. Écrire la loi d’Ohm pour chacun des deux résistors.", "<div class=\"eq\"><i>U</i><sub>R1</sub> = <i>R</i><sub>1</sub> · <i>I</i></div><div class=\"eq\"><i>U</i><sub>R2</sub> = <i>R</i><sub>2</sub> · <i>I</i></div>", "7 et 23"],
+ ["Un générateur de tension est branché en série avec deux résistors. Comment représente-t-on l’intensité <i>I</i>, la tension <i>U</i><sub>G</sub> du générateur et les tensions <i>U</i><sub>R1</sub> et <i>U</i><sub>R2</sub> des résistors pour qu’elles soient positives ?", "Le courant sort de la borne + du générateur, traverse successivement les deux résistors, puis revient à la borne − : <i>I</i> est représentée sur le fil dans ce sens. <i>U</i><sub>G</sub> (générateur) est représentée par une flèche de même sens que <i>I</i>, dirigée vers la borne + ; <i>U</i><sub>R1</sub> et <i>U</i><sub>R2</sub> (récepteurs) par des flèches de sens contraire à <i>I</i>.", "5 et 23"],
+ ["Comment modélise-t-on un générateur réel ?", "Par l’association en série d’une source de tension idéale et d’une résistance interne.", 8],
+ ["Comment appelle-t-on la résistance que rencontrent les porteurs de charge qui traversent le milieu matériel (souvent du cuivre) d’un générateur ?", "La résistance interne du générateur.", 8],
+ ["Un générateur réel est modélisé par une source de tension idéale de force électromotrice <i>E</i> en série avec une résistance interne <i>r</i>, et délivre l’intensité <i>I</i>. Exprimer la tension <i>U</i><sub>G</sub> entre ses bornes en fonction de <i>E</i>, <i>r</i> et <i>I</i>.", "<div class=\"eq\"><i>U</i><sub>G</sub> = <i>E</i> − <i>r</i> · <i>I</i></div>", 8],
+ ["Dans le modèle du générateur réel <i>U</i><sub>G</sub> = <i>E</i> − <i>r</i> · <i>I</i>, que représente <i>E</i> ?", "La force électromotrice du générateur idéal constituant le modèle.", 8],
+ ["Dans le modèle du générateur réel <i>U</i><sub>G</sub> = <i>E</i> − <i>r</i> · <i>I</i>, à quoi correspond <i>r</i> ?", "À la somme de tous les éléments résistifs traversés par les porteurs de charge dans le générateur (résistance interne).", 8],
+ ["Quelle est la tension <i>U</i><sub>G</sub> aux bornes d’un générateur idéal de tension de force électromotrice <i>E</i>, et que vaut sa résistance interne ?", "Sa résistance interne est nulle, donc <i>U</i><sub>G</sub> = <i>E</i> quelle que soit l’intensité délivrée.", 8],
+ ["Qu’appelle-t-on dipôle capacitif ?", "Un dipôle qui possède une capacité <i>C</i>, c’est-à-dire capable d’accumuler à un instant <i>t</i> donné des charges électriques <i>q</i>(<i>t</i>) quand il est soumis à une tension <i>u</i>(<i>t</i>).", 9],
+ ["Un dipôle capacitif soumis à la tension <i>u</i>(<i>t</i>) accumule la charge <i>q</i>(<i>t</i>). Exprimer sa capacité <i>C</i> en fonction de <i>q</i>(<i>t</i>) et <i>u</i>(<i>t</i>).", "<div class=\"eq\"><i>C</i> = <span class=\"frac\"><span><i>q</i>(<i>t</i>)</span><span><i>u</i>(<i>t</i>)</span></span></div>", 9],
+ ["Dans quelle unité s’exprime la capacité <i>C</i> d’un dipôle capacitif, et quel est son symbole ?", "Le farad, de symbole F.", 9],
+ ["Entre quelles valeurs sont comprises les capacités des dipôles capacitifs couramment utilisés ?", "Entre le pF et le µF (une capacité de 1 F est déjà très « grande »).", 9],
+ ["Un résistor est-il un dipôle capacitif ?", "Non : un résistor n’accumule pas de charges, il vérifie la loi d’Ohm <i>U</i> = <i>R</i> · <i>I</i> et non la relation <i>q</i> = <i>C</i> · <i>u</i>.", "9 et 23"],
+ ["Comment appelle-t-on un assemblage de deux plaques conductrices parallèles séparées par un isolant ?", "Un condensateur à plaques parallèles.", 9],
+ ["Qu’apparaît-il entre les plaques d’un condensateur à plaques parallèles soumis à une tension, en plus de l’accumulation de charges sur les plaques ?", "Un champ électrique.", 9],
+ ["Que vaut le courant dans une branche contenant un condensateur en régime permanent ?", "Il est nul.", 9],
+ ["Donner la capacité <i>C</i> d’un condensateur à plaques parallèles en fonction de la permittivité <i>ε</i> de l’isolant, de la surface <i>S</i> des plaques en regard et de la distance <i>d</i> entre les plaques.", "<div class=\"eq\"><i>C</i> = <span class=\"frac\"><span><i>ε</i> · <i>S</i></span><span><i>d</i></span></span></div>", 9],
+ ["Comment la capacité d’un condensateur à plaques parallèles varie-t-elle avec la surface <i>S</i> des plaques en regard et avec la distance <i>d</i> entre les plaques ?", "Elle est proportionnelle à <i>S</i> et inversement proportionnelle à <i>d</i>.", 9],
+ ["Comment appelle-t-on la constante <i>ε</i> dans l’expression de la capacité d’un condensateur à plaques parallèles, et de quoi dépend-elle ?", "La permittivité ; elle dépend de l’isolant entre les plaques.", 9],
+ ["Un condensateur plan de capacité <i>C</i> est soumis à la tension <i>u</i>(<i>t</i>). Donner la charge <i>q</i>(<i>t</i>) de sa plaque positive en fonction de <i>C</i> et <i>u</i>(<i>t</i>).", "<div class=\"eq\"><i>q</i>(<i>t</i>) = <i>C</i> · <i>u</i>(<i>t</i>)</div>", 10],
+ ["La charge <i>q</i>(<i>t</i>) de la plaque positive d’un condensateur peut-elle varier de façon discontinue au cours du temps ?", "Non : à tout instant, la fonction <i>q</i>(<i>t</i>) est une fonction continue du temps.", 10],
+ ["Donner l’intensité <i>i</i>(<i>t</i>) du courant qui traverse un condensateur de capacité <i>C</i> soumis à la tension <i>u</i>(<i>t</i>), en fonction de <i>C</i> et de <i>u</i>(<i>t</i>).", "<div class=\"eq\"><i>i</i>(<i>t</i>) = <i>C</i> · <span class=\"frac\"><span>d<i>u</i>(<i>t</i>)</span><span>d<i>t</i></span></span></div>", 10],
+ ["Dans une équation différentielle, quelle est l’inconnue ?", "Une fonction, notée ici <i>y</i>, que l’équation relie à sa dérivée.", 11],
+ ["Quelle condition sur <i>b</i> rend l’équation différentielle <i>y</i>′ = <i>a</i> · <i>y</i> + <i>b</i> « avec second membre » ?", "Il faut que <i>b</i> ≠ 0.", 11],
+ ["Dans l’équation différentielle <i>y</i>′ = <i>a</i> · <i>y</i> + <i>b</i>, que doivent être <i>a</i> et <i>b</i> pour que les coefficients soient constants ?", "Des nombres réels fixés.", 11],
+ ["Quelle propriété doit avoir une fonction <i>y</i> pour être solution de l’équation différentielle <i>y</i>′ = <i>a</i> · <i>y</i> + <i>b</i> ?", "Être dérivable sur R et vérifier cette égalité pour tout réel <i>x</i>.", 11],
+ ["Donner les solutions de l’équation différentielle <i>y</i>′ = <i>a</i> · <i>y</i> + <i>b</i>, avec <i>a</i> ≠ 0, en fonction de <i>a</i>, <i>b</i>, <i>x</i> et d’une constante réelle quelconque <i>K</i>.", "<div class=\"eq\"><i>y</i>(<i>x</i>) = <i>K</i> · e<sup><i>a</i> · <i>x</i></sup> − <span class=\"frac\"><span><i>b</i></span><span><i>a</i></span></span></div>", 11],
+ ["Pour l’équation différentielle <i>y</i>′ = <i>a</i> · <i>y</i> + <i>b</i> avec <i>a</i> ≠ 0, quelle est la solution particulière constante <i>y</i><sub>p</sub> ?", "<div class=\"eq\"><i>y</i><sub>p</sub>(<i>x</i>) = − <span class=\"frac\"><span><i>b</i></span><span><i>a</i></span></span></div>", 11],
+ ["Pour l’équation différentielle <i>y</i>′ = <i>a</i> · <i>y</i> + <i>b</i> avec la condition initiale <i>y</i>(0) = <i>y</i>, exprimer la constante <i>K</i> de la solution générale en fonction de <i>y</i>, <i>a</i> et <i>b</i>.", "<div class=\"eq\"><i>K</i> = <i>y</i> + <span class=\"frac\"><span><i>b</i></span><span><i>a</i></span></span></div>", 11],
+ ["Donner l’unique solution de l’équation différentielle <i>y</i>′ = <i>a</i> · <i>y</i> + <i>b</i> (avec <i>a</i> ≠ 0) qui vérifie <i>y</i>(0) = <i>y</i>, en fonction de <i>y</i>, <i>a</i>, <i>b</i> et <i>x</i>.", "<div class=\"eq\"><i>y</i>(<i>x</i>) = (<i>y</i> + <span class=\"frac\"><span><i>b</i></span><span><i>a</i></span></span>) · e<sup><i>a</i> · <i>x</i></sup> − <span class=\"frac\"><span><i>b</i></span><span><i>a</i></span></span></div>", 11],
+ ["Quelles sont les trois étapes pour résoudre <i>y</i>′ = <i>a</i> · <i>y</i> + <i>b</i> avec une condition initiale ?", "1. Écrire l’équation sous la forme <i>y</i>′ = <i>a</i> · <i>y</i> + <i>b</i> et repérer <i>a</i> et <i>b</i> ; 2. écrire la solution générale <i>y</i>(<i>x</i>) = <i>K</i> · e<sup><i>a</i> · <i>x</i></sup> − <i>b</i>/<i>a</i> ; 3. remplacer <i>x</i> par 0 dans cette solution pour déterminer <i>K</i> à l’aide de <i>y</i>(0).", 11],
+ ["Un circuit RC série comporte un générateur idéal de tension <i>E</i>, un résistor de résistance <i>R</i>, un condensateur de capacité <i>C</i> et un commutateur à deux positions 1 et 2. Que fait le condensateur lorsque le commutateur est en position 1 ?", "Il se charge.", 13],
+ ["Dans le même circuit RC série, que fait le condensateur lorsque le commutateur est basculé en position 2 ?", "Il se décharge dans le résistor de résistance <i>R</i>.", 13],
+ ["Un condensateur de capacité <i>C</i> se décharge dans un résistor de résistance <i>R</i>. Donner l’équation différentielle vérifiée par la tension <i>u</i><sub>C</sub>(<i>t</i>) à ses bornes pour <i>t</i> > 0, en fonction de <i>R</i> et <i>C</i>.", "<div class=\"eq\"><span class=\"frac\"><span>d<i>u</i><sub>C</sub>(<i>t</i>)</span><span>d<i>t</i></span></span> + <span class=\"frac\"><span>1</span><span><i>R</i> · <i>C</i></span></span> · <i>u</i><sub>C</sub>(<i>t</i>) = 0</div>", 13],
+ ["Quelle est la forme de la solution d’une équation différentielle à coefficients constants sans second membre, comme celle de la décharge du condensateur ?", "<div class=\"eq\"><i>u</i><sub>C</sub>(<i>t</i>) = <i>A</i> · e<sup>−<i>λ</i><i>t</i></sup></div>avec <i>A</i> et <i>λ</i> des constantes.", 13],
+ ["Un condensateur de capacité <i>C</i>, initialement chargé à la tension <i>E</i>, se décharge à partir de <i>t</i> = 0 dans un résistor de résistance <i>R</i>. Donner <i>u</i><sub>C</sub>(<i>t</i>) en fonction de <i>E</i>, <i>R</i>, <i>C</i> et <i>t</i>.", "<div class=\"eq\"><i>u</i><sub>C</sub>(<i>t</i>) = <i>E</i> · e<sup>−<i>t</i>/(<i>R</i> · <i>C</i>)</sup></div>", 13],
+ ["Comment appelle-t-on la grandeur τ = <i>R</i> · <i>C</i> d’un circuit RC série ?", "La constante de temps (ou temps caractéristique) du circuit.", 13],
+ ["Donner l’expression de la constante de temps τ d’un circuit RC série en fonction de la résistance <i>R</i> du résistor et de la capacité <i>C</i> du condensateur.", "<div class=\"eq\">τ = <i>R</i> · <i>C</i></div>", 13],
+ ["Un condensateur de capacité <i>C</i> est monté en série avec un résistor de résistance <i>R</i> et une source idéale de tension de force électromotrice <i>E</i>. Donner l’équation différentielle vérifiée par la tension <i>u</i><sub>C</sub>(<i>t</i>) aux bornes du condensateur lors de la charge, en fonction de <i>R</i>, <i>C</i> et <i>E</i>.", "<div class=\"eq\"><span class=\"frac\"><span>d<i>u</i><sub>C</sub>(<i>t</i>)</span><span>d<i>t</i></span></span> + <span class=\"frac\"><span>1</span><span><i>R</i> · <i>C</i></span></span> · <i>u</i><sub>C</sub>(<i>t</i>) = <span class=\"frac\"><span><i>E</i></span><span><i>R</i> · <i>C</i></span></span></div>", 14],
+ ["La solution d’une équation différentielle à coefficients constants avec second membre est la somme de deux termes : lesquels ?", "Une solution particulière de l’équation différentielle (<i>U</i><sub>C,part</sub>) et la solution de l’équation homogène, c’est-à-dire de l’équation sans second membre (<i>u</i><sub>C,h</sub>(<i>t</i>)).", 14],
+ ["De quelle nature est la solution particulière <i>U</i><sub>C,part</sub> de l’équation différentielle de la charge d’un condensateur ?", "De même nature que le second membre, c’est-à-dire constante : <i>U</i><sub>C,part</sub> = cste.", 14],
+ ["Un circuit RC série de force électromotrice <i>E</i> contient un résistor de résistance <i>R</i> et un condensateur de capacité <i>C</i> initialement déchargé. L’interrupteur est fermé à <i>t</i> = 0. Donner <i>u</i><sub>C</sub>(<i>t</i>) en fonction de <i>E</i>, <i>R</i>, <i>C</i> et <i>t</i>.", "<div class=\"eq\"><i>u</i><sub>C</sub>(<i>t</i>) = <i>E</i> · (1 − e<sup>−<i>t</i>/(<i>R</i> · <i>C</i>)</sup>)</div>", 14],
+ ["La tension <i>u</i><sub>C</sub> entre les bornes d’un condensateur peut-elle présenter un saut brusque ?", "Non : la tension entre les bornes d’un condensateur est continue.", 14],
+ ["De quoi un dipôle RC est-il constitué ?", "D’un résistor et d’un condensateur en série.", 15],
+ ["À quelle durée le temps caractéristique τ d’un dipôle RC est-il lié ?", "À la durée du régime transitoire dont est responsable le dipôle RC.", 15],
+ ["Quel pourcentage de sa charge (ou de sa décharge) un condensateur d’un dipôle RC a-t-il atteint au bout d’une durée τ ?", "63 %.", 15],
+ ["Quel pourcentage de sa charge (ou de sa décharge) un condensateur d’un dipôle RC a-t-il atteint au bout d’une durée 5τ ?", "99 %.", 15],
+];
+
+// $x$ → variable en italique
+const it = s => s.replace(/\$([^$]+)\$/g, '<i>$1</i>');
+// Espaces insécables avant : ; ? ! » % et après « (hors balises)
+const nb = s => s.replace(/ ([:;?!»%])/g, ' $1').replace(/« /g, '« ');
+const fmt = s => nb(it(s));
+
+let i = 0;
+const $ = id => document.getElementById(id);
+const card = $('card');
+
+let deck = [];
+function shuffle(a) {
+  for (let k = a.length - 1; k > 0; k--) {
+    const j = Math.floor(Math.random() * (k + 1));
+    [a[k], a[j]] = [a[j], a[k]];
+  }
+  return a;
+}
+function show() {
+  card.classList.remove('shown');
+  $('q').innerHTML = fmt(deck[i][0]);
+  $('a').innerHTML = fmt(deck[i][1]) + '<div class="page">Cours Électricité, ' + (typeof deck[i][2] === 'number' ? 'page ' : 'pages ') + deck[i][2] + '</div>';
+  $('count').textContent = (i + 1) + ' / ' + deck.length;
+}
+function go(d) { i = (i + d + deck.length) % deck.length; show(); }
+function reveal() { card.classList.toggle('shown'); }
+
+card.addEventListener('click', reveal);
+$('prev').addEventListener('click', () => go(-1));
+$('next').addEventListener('click', () => go(1));
+document.addEventListener('keydown', e => {
+  if (!deck.length) return;
+  if (e.key === 'ArrowRight') go(1);
+  else if (e.key === 'ArrowLeft') go(-1);
+  else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); reveal(); }
+});
+$('n').max = cards.length;
+$('hint').textContent = 'de 1 à ' + cards.length;
+$('start').addEventListener('submit', e => {
+  e.preventDefault();
+  let n = parseInt($('n').value, 10);
+  if (isNaN(n)) n = 10;
+  n = Math.max(1, Math.min(n, cards.length));
+  deck = shuffle(cards.slice()).slice(0, n);
+  i = 0;
+  $('start').hidden = true;
+  card.hidden = false;
+  $('nav').hidden = false;
+  show();
+});
+</script>
+</body>
+</html>
