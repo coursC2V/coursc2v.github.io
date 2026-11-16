@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cinétique chimique – Flashcards</title>
+<style>
+  :root { --bg:#000; --fg:#fff; --card:#000; --accent:#9db8ee; --muted:#9aa0ab; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; flex-direction:column; align-items:center;
+         justify-content:center; gap:1.2rem; padding:1.5rem; background:var(--bg); color:var(--fg);
+         font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  h1 { font-size:1.1rem; font-weight:600; margin:0; color:var(--muted); }
+  .card { width:min(720px,100%); min-height:min(400px,62vh); cursor:pointer; background:var(--card);
+          border:1px solid #444; border-radius:14px; padding:1.6rem 1.8rem; display:flex;
+          flex-direction:column; justify-content:center; gap:1.2rem; font-size:1.2rem; line-height:1.6; }
+  #q { color:var(--fg); }
+  #a { display:none; color:#a8a8a8; border-top:1px solid #444; padding-top:1.2rem; }
+  .card.shown #a { display:block; }
+  .nav { display:flex; align-items:center; gap:1rem; }
+  button { font:inherit; padding:.5rem 1.1rem; border:1px solid var(--accent); background:transparent;
+           color:var(--accent); border-radius:8px; cursor:pointer; }
+  button:hover { background:var(--accent); color:var(--bg); }
+  #count { min-width:5rem; text-align:center; color:var(--muted); }
+  .nuc { display:inline-flex; align-items:center; }
+  .nuc .ns { display:inline-flex; flex-direction:column; font-size:.7em; line-height:1.05; margin-right:.1em; text-align:right; }
+  .eq { margin-top:.6rem; }
+  .bar { text-decoration:overline; }
+  .frac { display:inline-block; vertical-align:middle; text-align:center; }
+  .frac > span { display:block; padding:0 .25em; }
+  .frac > span:first-child { border-bottom:1px solid currentColor; }
+  ol, ul { margin:.3rem 0 0; padding-left:1.4rem; }
+  .page { margin-top:.9rem; font-size:.95rem; color:#7d7d7d; }
+  #consigne { margin:0; color:var(--muted); font-size:1.1rem; }
+  [hidden] { display:none !important; }
+  #start { display:flex; flex-direction:column; align-items:center; gap:1.4rem; text-align:center; }
+  #start label { font-size:1.6rem; line-height:1.4; }
+  #start input { font:inherit; font-size:2rem; width:6rem; text-align:center; padding:.4rem;
+                 background:#000; color:var(--fg); border:1px solid #666; border-radius:8px; }
+  #start button { font-size:1.2rem; padding:.7rem 1.8rem; }
+</style>
+</head>
+<body>
+<h1>Cinétique chimique – Terminale spécialité</h1>
+<form id="start" novalidate>
+  <label for="n">Combien de flashcards ?<br><small id="hint" style="color:var(--muted);font-size:1rem"></small></label>
+  <input id="n" type="number" min="1" value="10" inputmode="numeric">
+  <button type="submit">Commencer</button>
+  <p id="consigne">Pour chaque carte, cliquer dessus pour afficher la réponse.</p>
+</form>
+<div class="card" id="card" title="Cliquer pour afficher la réponse" hidden>
+  <div id="q"></div>
+  <div id="a"></div>
+</div>
+<div class="nav" id="nav" hidden>
+  <button id="prev" type="button">←</button>
+  <span id="count"></span>
+  <button id="next" type="button">→</button>
+</div>
+
+<script>
+// Noyau ou particule : A en haut, Z en bas, puis le symbole
+const NUC = (A,Z,X) => '<span class="nuc"><span class="ns"><span>'+A+'</span><span>'+Z+'</span></span>'+X+'</span>';
+// Fraction
+const F = (n,d) => '<span class="frac"><span>'+n+'</span><span>'+d+'</span></span>';
+const EQ = s => '<div class="eq">'+s+'</div>';
+
+const nu  = '<span class="bar">ν</span><sub>e</sub>';
+const eqX = (Ap,Zp) => NUC('$A$','$Z$','X') + ' → ' + NUC(Ap,Zp,'Y');
+
+const cards = [
+
+ /* ===== Leçon I – Vitesse de réaction et facteurs cinétiques (p. 5-7) ; Leçon II – Loi de vitesse d’ordre 1 (p. 9-10) ===== */
+ ["Quelle est la valeur de la durée de persistance rétinienne des images, utilisée pour définir une réaction rapide ?", "10<sup>−1</sup> s : une réaction est dite rapide si la durée d’évolution du système est inférieure ou égale à cette durée.", 5],
+ ["Par rapport à quoi une réaction chimique est-elle dite lente ?", "Par rapport à une technique d’observation (spectrophotométrie, conductimétrie, observation à l’œil nu) : elle est lente si cette technique permet d’apprécier la transformation.", 5],
+ ["Une élève affirme : « cette réaction est lente ». Que doit-elle préciser pour que cette phrase ait un sens ?", "La technique d’observation vis-à-vis de laquelle la réaction est lente : « lent » ou « rapide » ne veut rien dire quand le mot est utilisé seul.", 5],
+ ["Quelle méthode permet de suivre une réaction faisant intervenir des espèces colorées ?", "La spectrophotométrie (mesure de l’absorbance).", "5 et 15"],
+ ["Quelle méthode permet de suivre une réaction faisant intervenir des espèces chargées électriquement ?", "La conductimétrie (mesure de la conductivité).", "5 et 15"],
+ ["Quelle méthode permet de suivre une réaction faisant intervenir des espèces gazeuses ?", "La mesure de la pression ou du volume de gaz dégagé.", "5 et 15"],
+ ["Comment définit-on un choc efficace entre deux entités chimiques ?", "C’est un choc après lequel les deux entités réagissent ensemble, en s’échangeant par exemple des électrons (réaction d’oxydoréduction) ou un proton (réaction acidobasique).", 5],
+ ["Sur quels paramètres macroscopiques peut-on influer pour augmenter le nombre de chocs efficaces à l’échelle microscopique ?", "La température et les concentrations en réactifs : ce sont des facteurs cinétiques.", "5 et 15"],
+ ["Comment définit-on les facteurs cinétiques ?", "Ce sont les grandeurs macroscopiques qui ont une influence sur la vitesse d’évolution d’un système chimique.", 5],
+ ["Comment la température du système chimique influe-t-elle sur la vitesse de son évolution ?", "L’évolution d’un système chimique est d’autant plus rapide que sa température est élevée.", 5],
+ ["Pourquoi chauffe-t-on au bain-marie ou avec un chauffe-ballon le mélange réactionnel pendant une synthèse organique ?", "Une température plus élevée augmente la vitesse d’évolution du système : la réaction est plus rapide, donc la synthèse dure moins longtemps.", "5 et 15"],
+ ["Comment les concentrations en réactifs influent-elles sur la vitesse d’évolution d’un système chimique ?", "L’évolution d’un système chimique est d’autant plus rapide que les concentrations en réactifs sont importantes.", 6],
+ ["Comment définit-on un catalyseur ?", "Un catalyseur est une espèce chimique qui accélère une réaction chimique, sans modifier l’état final.", 6],
+ ["Un catalyseur est consommé au cours de la réaction puis régénéré. Apparaît-il dans l’équation bilan ?", "Non : c’est comme s’il ne réagissait pas, il n’apparaît pas dans l’équation bilan.", 6],
+ ["Pourquoi note-t-on [réactif]<sub>$t$</sub> la concentration en un réactif au cours d’une réaction chimique ?", "Parce que cette concentration diminue au cours du temps : c’est une fonction du temps.", 6],
+ ["Donner l’expression de la vitesse volumique de disparition $v$($t$) d’un réactif en fonction de la dérivée temporelle de sa concentration [réactif]<sub>$t$</sub> dans le milieu réactionnel.", "<div class=\"eq\">$v$($t$) = − " + F("d[réactif]<sub>$t$</sub>", "d$t$") + "</div>", 6],
+ ["Comment obtient-on graphiquement la vitesse volumique de disparition d’un réactif à l’instant $t$, à partir de la courbe représentative de [réactif]<sub>$t$</sub> ?", "C’est l’opposé du coefficient directeur de la tangente à la courbe représentative de [réactif]<sub>$t$</sub>, à l’instant $t$.", 6],
+ ["La tangente à la courbe représentative de [réactif]<sub>$t$</sub> à l’instant $t$ a un coefficient directeur égal à −15 mol m<sup>−3</sup> min<sup>−1</sup>. Quelle est la valeur de la vitesse volumique de disparition du réactif à cet instant ?", "$v$($t$) = 15 mol m<sup>−3</sup> min<sup>−1</sup> : la vitesse est l’opposé du coefficient directeur de la tangente.", 6],
+ ["La vitesse d’une réaction est-elle constante au cours du temps ?", "Rarement : on la note comme une fonction du temps, $v$($t$).", 6],
+ ["Donner l’expression de la vitesse volumique d’apparition $v$($t$) d’un produit en fonction de la dérivée temporelle de sa concentration [produit]<sub>$t$</sub> dans le milieu réactionnel.", "<div class=\"eq\">$v$($t$) = " + F("d[produit]<sub>$t$</sub>", "d$t$") + "</div>", 6],
+ ["Comment évolue au cours du temps la vitesse volumique d’apparition d’un produit lors d’une réaction en solution aqueuse ?", "Elle diminue au cours du temps, car les concentrations en réactifs diminuent.", "6 et 15"],
+ ["Comment définit-on le temps de demi-réaction $t$<sub>1/2</sub> ?", "C’est la durée nécessaire pour que le système chimique atteigne la moitié de son avancement final.", 7],
+ ["Donner la définition du temps de demi-réaction $t$<sub>1/2</sub> sous forme d’une égalité sur l’avancement $x$ du système, en fonction de l’avancement final $x$<sub>f</sub>.", "<div class=\"eq\">$x$($t$<sub>1/2</sub>) = " + F("$x$<sub>f</sub>", "2") + "</div>", 7],
+ ["Pour une réaction totale, qu’est-ce qui a disparu à moitié au bout du temps de demi-réaction $t$<sub>1/2</sub> ?", "La moitié du réactif limitant a disparu.", 7],
+ ["Donner l’expression de la vitesse volumique de disparition $v$($t$) d’un réactif lorsque la transformation suit une loi de vitesse d’ordre 1, en fonction de la constante de vitesse $k$ et de la concentration [réactif]<sub>$t$</sub>.", "La vitesse de disparition est proportionnelle à la concentration en ce réactif :<div class=\"eq\">$v$($t$) = $k$ · [réactif]<sub>$t$</sub></div>", 9],
+ ["Pour une transformation chimique qui suit une loi de vitesse d’ordre 1 de constante de vitesse $k$, donner l’équation différentielle vérifiée par la concentration [réactif]<sub>$t$</sub> en fonction de $k$ et de [réactif]<sub>$t$</sub>.", "<div class=\"eq\">" + F("d[réactif]<sub>$t$</sub>", "d$t$") + " + $k$ · [réactif]<sub>$t$</sub> = 0</div>Équation différentielle du premier ordre, à coefficient constant, et sans second membre.", 9],
+ ["Pour une loi de vitesse d’ordre 1 de constante de vitesse $k$, quelle est la forme de la solution [réactif]<sub>$t$</sub> de l’équation différentielle, en fonction de $t$, $k$ et d’une constante d’intégration $A$ ?", "<div class=\"eq\">[réactif]<sub>$t$</sub> = $A$ · e<sup>−$k$·$t$</sup></div>", 9],
+ ["Comment appelle-t-on $k$ dans l’expression $v$($t$) = $k$ · [réactif]<sub>$t$</sub> d’une loi de vitesse d’ordre 1 ?", "La constante de vitesse.", 9],
+ ["Dans la solution [réactif]<sub>$t$</sub> = $A$ · e<sup>−$k$·$t$</sup> d’une loi de vitesse d’ordre 1, comment appelle-t-on $A$ et comment le détermine-t-on ?", "$A$ est une constante d’intégration, que l’on détermine à l’aide des conditions initiales.", 9],
+ ["Pour une loi de vitesse d’ordre 1 de constante de vitesse $k$, donner l’expression du temps de demi-réaction $t$<sub>1/2</sub> en fonction de $k$.", "<div class=\"eq\">$t$<sub>1/2</sub> = " + F("ln(2)", "$k$") + "</div>", 9],
+ ["Pour quel type de loi de vitesse le temps de demi-réaction ne dépend-il pas des conditions initiales ?", "Uniquement pour une loi de vitesse d’ordre 1.", 9],
+ ["Une transformation suit une loi de vitesse d’ordre 1. On double la concentration initiale en réactif. Comment varie le temps de demi-réaction ?", "Il ne varie pas : dans le cas d’une loi de vitesse d’ordre 1, le temps de demi-réaction ne dépend pas des conditions initiales.", 9],
+ ["Vers quelle valeur tend [réactif]<sub>$t$</sub> = $c$<sub>0</sub> · e<sup>−$k$·$t$</sup> quand $t$ tend vers +∞ ? Quelle est la conséquence pour la courbe représentative ?", "[réactif]<sub>$t$</sub> tend vers 0 : la courbe a une asymptote horizontale (l’axe des temps).", "9 et 15"],
+ ["Pour la représentation graphique de [réactif]<sub>$t$</sub> = $c$<sub>0</sub> · e<sup>−$k$·$t$</sup>, quel est le coefficient directeur de la tangente à l’origine, en fonction de $k$ et $c$<sub>0</sub> ?", "<div class=\"eq\">−$k$ · $c$<sub>0</sub></div>", "9 et 15"],
+ ["Pour la représentation graphique de [réactif]<sub>$t$</sub> = $c$<sub>0</sub> · e<sup>−$k$·$t$</sup>, en quelle date, en fonction de $k$, la tangente à l’origine coupe-t-elle l’axe des temps ?", "<div class=\"eq\">$t$ = " + F("1", "$k$") + "</div>", "9 et 15"],
+ ["Citer les trois méthodes qui permettent de déterminer si l’évolution de la concentration en un réactif suit une loi de vitesse d’ordre 1, à partir de mesures de [réactif]<sub>$t$</sub> à différentes dates.", "La vitesse en fonction de la concentration, le logarithme de la concentration, et le temps de demi-réaction.", 10],
+ ["On a déterminé la vitesse de disparition $v$($t$) d’un réactif à différentes dates. Quelle représentation graphique et quel résultat permettent de conclure à une loi de vitesse d’ordre 1 ?", "On trace $v$ en fonction de [réactif]<sub>$t$</sub> : si les points sont alignés avec une droite passant par l’origine (au sens d’une régression linéaire dont les écarts sont répartis aléatoirement de part et d’autre de la droite), la loi de vitesse est d’ordre 1.", 10],
+ ["On trace la vitesse de disparition $v$ d’un réactif en fonction de sa concentration [réactif]<sub>$t$</sub> et on obtient une droite passant par l’origine. Que représente le coefficient directeur de cette droite ?", "La constante de vitesse $k$ de la loi de vitesse d’ordre 1.", 10],
+ ["On trace $v$ en fonction de [réactif]<sub>$t$</sub> pour un réactif et on obtient une droite passant par l’origine, de coefficient directeur 0,25 h<sup>−1</sup>. Cette transformation suit-elle une loi de vitesse d’ordre 1 ? Si oui, quelle est la valeur de $k$ ?", "Oui, la loi de vitesse est d’ordre 1, et $k$ = 0,25 h<sup>−1</sup> (valeur choisie pour l’exemple).", 10],
+ ["Quelle représentation graphique, à partir de mesures de [réactif]<sub>$t$</sub> à différentes dates, et quel résultat permettent de conclure à une loi de vitesse d’ordre 1 par la méthode du logarithme de la concentration ?", "On trace ln([réactif]<sub>$t$</sub>) en fonction de $t$ : si les points sont alignés avec une droite de coefficient directeur négatif, la loi de vitesse est d’ordre 1.", 10],
+ ["Pour la représentation de ln([réactif]<sub>$t$</sub>) en fonction de $t$, les points sont alignés avec une droite de coefficient directeur négatif. À quoi est égal ce coefficient directeur, en fonction de $k$ ?", "<div class=\"eq\">−$k$</div>", 10],
+ ["On trace ln([réactif]<sub>$t$</sub>) en fonction de $t$ et on obtient une droite de coefficient directeur −0,35 h<sup>−1</sup>. La loi de vitesse est-elle d’ordre 1 ? Si oui, quelle est la valeur de $k$ ?", "Oui, la loi de vitesse est d’ordre 1, et $k$ = 0,35 h<sup>−1</sup> (valeur choisie pour l’exemple) : le coefficient directeur est égal à −$k$.", 10],
+ ["Comment vérifie-t-on qu’une loi de vitesse est d’ordre 1 par la méthode du temps de demi-réaction ?", "On détermine graphiquement le temps de demi-réaction pour plusieurs concentrations initiales : s’il est le même pour toutes, la loi de vitesse est d’ordre 1.", 10],
+ ["On détermine graphiquement le temps de demi-réaction d’une transformation pour trois concentrations initiales différentes et on trouve la même valeur dans les trois cas. Que peut-on en conclure sur la loi de vitesse ?", "La loi de vitesse est d’ordre 1.", 10]
+];
+
+// $x$ → variable en italique
+const it = s => s.replace(/\$([^$]+)\$/g, '<i>$1</i>');
+// Espaces insécables avant : ; ? ! » % et après « (hors balises)
+const nb = s => s.replace(/ ([:;?!»%])/g, ' $1').replace(/« /g, '« ');
+const fmt = s => nb(it(s));
+
+let i = 0;
+const $ = id => document.getElementById(id);
+const card = $('card');
+
+let deck = [];
+function shuffle(a) {
+  for (let k = a.length - 1; k > 0; k--) {
+    const j = Math.floor(Math.random() * (k + 1));
+    [a[k], a[j]] = [a[j], a[k]];
+  }
+  return a;
+}
+function show() {
+  card.classList.remove('shown');
+  $('q').innerHTML = fmt(deck[i][0]);
+  $('a').innerHTML = fmt(deck[i][1]) + '<div class="page">Cours Cinétique chimique, ' + (typeof deck[i][2] === 'number' ? 'page ' : 'pages ') + deck[i][2] + '</div>';
+  $('count').textContent = (i + 1) + ' / ' + deck.length;
+}
+function go(d) { i = (i + d + deck.length) % deck.length; show(); }
+function reveal() { card.classList.toggle('shown'); }
+
+card.addEventListener('click', reveal);
+$('prev').addEventListener('click', () => go(-1));
+$('next').addEventListener('click', () => go(1));
+document.addEventListener('keydown', e => {
+  if (!deck.length) return;
+  if (e.key === 'ArrowRight') go(1);
+  else if (e.key === 'ArrowLeft') go(-1);
+  else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); reveal(); }
+});
+$('n').max = cards.length;
+$('hint').textContent = 'de 1 à ' + cards.length;
+$('start').addEventListener('submit', e => {
+  e.preventDefault();
+  let n = parseInt($('n').value, 10);
+  if (isNaN(n)) n = 10;
+  n = Math.max(1, Math.min(n, cards.length));
+  deck = shuffle(cards.slice()).slice(0, n);
+  i = 0;
+  $('start').hidden = true;
+  card.hidden = false;
+  $('nav').hidden = false;
+  show();
+});
+</script>
+</body>
+</html>
